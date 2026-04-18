@@ -64,10 +64,11 @@ e-learning-swe/
 ### 关键架构决策
 
 - **认证**: JWT (SimpleJWT)，Access Token 1天 / Refresh Token 7天，启用轮换与黑名单
+- **权限**: 默认 `IsAuthenticated`，管理员操作使用自定义 `IsAdminUser`（`is_superuser` 校验）
 - **自定义用户模型**: `user.ElUser`，自定义认证后端 `user.services.auth.ElUserAuthBackend`
 - **统一响应**: 业务接口通过 `ApiResponse` 返回，异常通过 `ApiException` 抛出，由 `ExceptionGlobalMiddleware` 统一转换
 - **主键**: 使用 ULID，通过 `ULIDJSONRenderer` 序列化为字符串
-- **分页**: 默认 `PageNumberPagination`，每页 10 条，最大 100
+- **分页**: 默认 `StandardPagination`（返回 `ApiResponse` 统一格式 `{code, message, content: {count, next, previous, results}}`），每页 10 条，最大 100
 - **精确过滤**: 使用 `django-filters`，在 `filters.py` 中定义 `FilterSet`，禁止直接使用 `filterset_fields`
 - **模糊搜索**: 使用 `SearchFilter` 及 `search_fields`
 - **结果排序**: 使用 `OrderingFilter` 及 `ordering_fields`
