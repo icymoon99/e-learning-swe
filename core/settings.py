@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "django_filters",
     "ulid_django",
     "django_q",
+    "q2",
     "system",
     "user",
 ]
