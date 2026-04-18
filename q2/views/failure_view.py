@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from core.common.exception.api_exception import ApiException
 from core.common.exception.api_response import ApiResponse
 from core.common.exception.api_status_enum import ResponseStatus
-from core.common.pagination import paginated_response
+from core.common.pagination import StandardPagination
 from q2.serializers import TaskSerializer
 from q2.views.task_view import IsAdminUser
 
@@ -20,14 +20,13 @@ class FailureViewSet(
 ):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TaskSerializer
-    pagination_class = None
+    pagination_class = StandardPagination
 
     def get_queryset(self):
         return Failure.objects.all().order_by("-stopped")
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        return paginated_response(request, queryset, TaskSerializer, page_size=20)
+        return super().list(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         if not IsAdminUser().has_permission(request, self):

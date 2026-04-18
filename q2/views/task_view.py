@@ -4,7 +4,7 @@ from rest_framework import mixins, permissions, status as drf_status, viewsets
 from core.common.exception.api_exception import ApiException
 from core.common.exception.api_response import ApiResponse
 from core.common.exception.api_status_enum import ResponseStatus
-from core.common.pagination import paginated_response
+from core.common.pagination import StandardPagination
 from q2.serializers import TaskSerializer
 
 
@@ -21,7 +21,7 @@ class TaskViewSet(
 ):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TaskSerializer
-    pagination_class = None  # 使用自定义 paginated_response
+    pagination_class = StandardPagination
 
     def get_queryset(self):
         status_filter = self.request.query_params.get("status")
@@ -33,13 +33,15 @@ class TaskViewSet(
             return Task.objects.filter(success__isnull=True)
         return Task.objects.all()
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        search = request.query_params.get("search")
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        search = self.request.query_params.get("search")
         if search:
             queryset = queryset.filter(name__icontains=search)
-        queryset = queryset.order_by("-started")
-        return paginated_response(request, queryset, TaskSerializer, page_size=20)
+        return queryset.order_by("-started")
+
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
