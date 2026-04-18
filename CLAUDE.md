@@ -14,34 +14,34 @@ E-Learning SWE 教育平台后端，Django + DRF 提供 RESTful API。
 
 ### 后端 (Django)
 
-**项目使用 `uv` 管理 Python 虚拟环境，位于根目录 `.venv`。切换到根目录时会自动激活该虚拟环境**。
+**项目使用 `uv` 管理 Python 虚拟环境，位于根目录 `.venv`。在非交互式 shell（脚本、后台任务、&& 链）中，必须使用 `.venv/bin/python` 直接调用，不依赖 `source activate`。**
 
 ```bash
 # 安装依赖
 uv pip install -r requirements.txt
 
 # 启动开发服务器
-python manage.py runserver 0.0.0.0:8600
+.venv/bin/python manage.py runserver 0.0.0.0:8600
 
 # 数据库迁移
-python manage.py makemigrations
-python manage.py migrate
+.venv/bin/python manage.py makemigrations
+.venv/bin/python manage.py migrate
 
 # 运行测试
-python manage.py test
+.venv/bin/python manage.py test
 
 # 系统检查
-python manage.py check
-python manage.py makemigrations --check --dry-run   # 检查是否漏迁移
+.venv/bin/python manage.py check
+.venv/bin/python manage.py makemigrations --check --dry-run   # 检查是否漏迁移
 
 # 创建超级用户
-python manage.py createsuperuser
+.venv/bin/python manage.py createsuperuser
 
 # 启动 Django-Q Worker
-python manage.py qcluster
+.venv/bin/python manage.py qcluster
 
 # 收集静态文件
-python manage.py collectstatic --noinput
+.venv/bin/python manage.py collectstatic --noinput
 ```
 
 ## 后端架构
@@ -119,7 +119,7 @@ app_name/
 ### 完成开发后必做检查
 
 ```bash
-python manage.py check
-python manage.py makemigrations --check --dry-run
-python manage.py test
+.venv/bin/python manage.py check
+.venv/bin/python manage.py makemigrations --check --dry-run
+.venv/bin/python manage.py test
 ```
