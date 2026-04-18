@@ -1,5 +1,5 @@
 from django_q.models import Schedule
-from rest_framework import mixins, permissions, status as drf_status, viewsets
+from rest_framework import mixins, status as drf_status, viewsets
 
 from core.common.exception.api_exception import ApiException
 from core.common.exception.api_response import ApiResponse
@@ -15,7 +15,6 @@ class ScheduleViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    permission_classes = [permissions.IsAuthenticated]
     serializer_class = ScheduleSerializer
 
     def get_queryset(self):

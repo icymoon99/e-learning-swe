@@ -2,7 +2,7 @@ import json
 
 from django_q.models import Failure
 from django_q.tasks import async_task
-from rest_framework import mixins, permissions, status as drf_status, viewsets
+from rest_framework import mixins, status as drf_status, viewsets
 from rest_framework.decorators import action
 
 from core.common.exception.api_exception import ApiException
@@ -17,7 +17,6 @@ class FailureViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    permission_classes = [permissions.IsAuthenticated]
     serializer_class = TaskSerializer
 
     def get_queryset(self):

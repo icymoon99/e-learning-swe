@@ -1,5 +1,6 @@
 from django_q.models import Task
-from rest_framework import mixins, permissions, status as drf_status, viewsets
+from rest_framework import mixins, status as drf_status, viewsets
+from rest_framework import permissions
 
 from core.common.exception.api_exception import ApiException
 from core.common.exception.api_response import ApiResponse
@@ -18,7 +19,6 @@ class TaskViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    permission_classes = [permissions.IsAuthenticated]
     serializer_class = TaskSerializer
 
     def get_queryset(self):
