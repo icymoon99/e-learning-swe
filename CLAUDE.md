@@ -110,9 +110,11 @@ app_name/
 
 ### 文档规范
 
-- **架构文档**: `/docs/ARCH/`，命名格式 `*_ARCH.md`
-- **计划文档**: `/docs/PLAN/`，命名格式 `*_PLAN.md`
-- **TDD 文档**: `/docs/TDD/`，命名格式 `*_TDD.md`
+- **架构文档**: `/docs/arch/`，命名格式 `YYYY-MM-DD-*-arch.md`
+- **规格文档**: `/docs/spec/`，命名格式 `YYYY-MM-DD-*-spec.md`
+- **计划文档**: `/docs/plan/`，命名格式 `YYYY-MM-DD-*-plan.md`
+- **TDD 文档**: `/docs/tdd/`，命名格式 `YYYY-MM-DD-*-tdd.md`
+- **API 文档**: `/docs/api/`，命名格式 `*-api.md`
 
 ### 完成开发后必做检查
 

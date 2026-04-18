@@ -14,6 +14,8 @@ media
 .vscode/
 .claude/
 .trae/
+.playwright-mcp/
+.superpowers/
 
 # Virtual environment
 venv/
@@ -22,9 +24,19 @@ env/
 
 # Environment variables
 .env
+.env.*
 
+# django backend
+build/
 logs/
 static/
 media/
 tests/
 test-results/
+
+# Vue / Vite frontend
+web/node_modules/
+web/dist/
+web/.env
+web/.env.local
+web/.env.*.local
