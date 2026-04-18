@@ -1,7 +1,6 @@
 from django.db.models import Q
 from django_q.models import Task
-from rest_framework import permissions, viewsets
-from rest_framework.decorators import action
+from rest_framework import permissions, status as drf_status, viewsets
 
 from core.common.exception.api_exception import ApiException
 from core.common.exception.api_response import ApiResponse
@@ -52,8 +51,6 @@ class TaskViewSet(viewsets.GenericViewSet):
 
     def destroy(self, request, pk=None):
         if not IsAdminUser().has_permission(request, self):
-            from rest_framework.response import Response
-            from rest_framework import status as drf_status
             return ApiResponse(
                 status=ResponseStatus.ERROR,
                 message="需要管理员权限",

@@ -1,6 +1,7 @@
 from django_q.models import Failure
 from django_q.tasks import async_task
 from rest_framework import permissions, viewsets
+from rest_framework import status as drf_status
 from rest_framework.decorators import action
 
 from core.common.exception.api_exception import ApiException
@@ -22,7 +23,6 @@ class FailureViewSet(viewsets.GenericViewSet):
 
     def destroy(self, request, pk=None):
         if not IsAdminUser().has_permission(request, self):
-            from rest_framework import status as drf_status
             return ApiResponse(
                 status=ResponseStatus.ERROR,
                 message="需要管理员权限",
@@ -40,7 +40,6 @@ class FailureViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=["post"])
     def retry(self, request, pk=None):
         if not IsAdminUser().has_permission(request, self):
-            from rest_framework import status as drf_status
             return ApiResponse(
                 status=ResponseStatus.ERROR,
                 message="需要管理员权限",
@@ -56,7 +55,6 @@ class FailureViewSet(viewsets.GenericViewSet):
             import json
             args = json.loads(failure.args) if failure.args else []
             kwargs = json.loads(failure.kwargs) if failure.kwargs else {}
-            # Ensure args is a list/tuple
             if not isinstance(args, (list, tuple)):
                 args = (args,)
             new_task_id = async_task(failure.func, *args, **kwargs)

@@ -12,3 +12,17 @@ class TaskSerializer(serializers.Serializer):
     stopped = serializers.DateTimeField(allow_null=True)
     success = serializers.BooleanField(allow_null=True)
     attempt_count = serializers.IntegerField()
+
+
+class ScheduleSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField()
+    func = serializers.CharField()
+    schedule_type = serializers.CharField()
+    minutes = serializers.IntegerField(allow_null=True, required=False)
+    repeats = serializers.IntegerField(allow_null=True, required=False, default=-1)
+    next_run = serializers.DateTimeField(allow_null=True, read_only=True)
+    cron = serializers.CharField(allow_null=True, required=False)
+    task = serializers.CharField(allow_null=True, read_only=True)
+    args = serializers.CharField(allow_null=True, required=False)
+    kwargs = serializers.JSONField(allow_null=True, required=False)
