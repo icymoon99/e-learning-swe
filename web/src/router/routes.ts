@@ -38,6 +38,21 @@ export const constantRoutes: RouteRecordRaw[] = [
 // 异步路由（需要权限的动态路由，后续扩展）
 export const asyncRoutes: RouteRecordRaw[] = [
   {
+    path: '/q2',
+    name: 'Q2',
+    component: () => import('@/layouts/default.vue'),
+    meta: { title: '任务管理', icon: 'Timer', permission: 'q2:view' },
+    redirect: '/q2/tasks',
+    children: [
+      {
+        path: 'tasks',
+        name: 'Q2Tasks',
+        component: () => import('@/views/q2/tasks/index.vue'),
+        meta: { title: 'Django-Q2 任务', permission: 'q2:view' },
+      },
+    ],
+  },
+  {
     path: '/user',
     name: 'User',
     component: () => import('@/layouts/default.vue'),
