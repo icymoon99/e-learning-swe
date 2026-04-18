@@ -26,3 +26,13 @@ class ScheduleSerializer(serializers.Serializer):
     task = serializers.CharField(allow_null=True, read_only=True)
     args = serializers.CharField(allow_null=True, required=False)
     kwargs = serializers.JSONField(allow_null=True, required=False)
+
+    def create(self, validated_data):
+        from django_q.models import Schedule
+        return Schedule.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

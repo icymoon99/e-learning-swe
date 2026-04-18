@@ -1,7 +1,8 @@
+import json
+
 from django_q.models import Failure
 from django_q.tasks import async_task
-from rest_framework import permissions, viewsets
-from rest_framework import status as drf_status
+from rest_framework import mixins, permissions, status as drf_status, viewsets
 from rest_framework.decorators import action
 
 from core.common.exception.api_exception import ApiException
@@ -12,30 +13,42 @@ from q2.serializers import TaskSerializer
 from q2.views.task_view import IsAdminUser
 
 
-class FailureViewSet(viewsets.GenericViewSet):
+class FailureViewSet(
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TaskSerializer
     pagination_class = None
 
+    def get_queryset(self):
+        return Failure.objects.all().order_by("-stopped")
+
     def list(self, request, *args, **kwargs):
-        queryset = Failure.objects.all().order_by("-stopped")
+        queryset = self.filter_queryset(self.get_queryset())
         return paginated_response(request, queryset, TaskSerializer, page_size=20)
 
-    def destroy(self, request, pk=None):
+    def destroy(self, request, *args, **kwargs):
         if not IsAdminUser().has_permission(request, self):
             return ApiResponse(
                 status=ResponseStatus.ERROR,
                 message="需要管理员权限",
                 http_status=drf_status.HTTP_403_FORBIDDEN,
             )
+        instance = self.get_object()
+        instance.delete()
+        return ApiResponse.ok()
 
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         try:
-            failure = Failure.objects.get(id=pk)
+            obj = queryset.get(id=self.kwargs[lookup_url_kwarg])
         except Failure.DoesNotExist:
             raise ApiException(msg="失败任务不存在", code=ResponseStatus.NOT_FOUND.code)
-
-        failure.delete()
-        return ApiResponse.ok()
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     @action(detail=True, methods=["post"])
     def retry(self, request, pk=None):
@@ -46,19 +59,14 @@ class FailureViewSet(viewsets.GenericViewSet):
                 http_status=drf_status.HTTP_403_FORBIDDEN,
             )
 
+        instance = self.get_object()
         try:
-            failure = Failure.objects.get(id=pk)
-        except Failure.DoesNotExist:
-            raise ApiException(msg="失败任务不存在", code=ResponseStatus.NOT_FOUND.code)
-
-        try:
-            import json
-            args = json.loads(failure.args) if failure.args else []
-            kwargs = json.loads(failure.kwargs) if failure.kwargs else {}
+            args = json.loads(instance.args) if instance.args else []
+            kwargs = json.loads(instance.kwargs) if instance.kwargs else {}
             if not isinstance(args, (list, tuple)):
                 args = (args,)
-            new_task_id = async_task(failure.func, *args, **kwargs)
-            failure.delete()
-            return ApiResponse.ok(content={"task_id": new_task_id, "name": failure.name})
+            new_task_id = async_task(instance.func, *args, **kwargs)
+            instance.delete()
+            return ApiResponse.ok(content={"task_id": new_task_id, "name": instance.name})
         except Exception as e:
             raise ApiException(msg=f"重试失败: {str(e)}", code=ResponseStatus.ERROR.code)
