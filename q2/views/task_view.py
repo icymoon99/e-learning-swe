@@ -4,7 +4,6 @@ from rest_framework import mixins, permissions, status as drf_status, viewsets
 from core.common.exception.api_exception import ApiException
 from core.common.exception.api_response import ApiResponse
 from core.common.exception.api_status_enum import ResponseStatus
-from core.common.pagination import StandardPagination
 from q2.serializers import TaskSerializer
 
 
@@ -21,7 +20,6 @@ class TaskViewSet(
 ):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TaskSerializer
-    pagination_class = StandardPagination
 
     def get_queryset(self):
         status_filter = self.request.query_params.get("status")

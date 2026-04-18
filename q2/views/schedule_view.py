@@ -4,7 +4,6 @@ from rest_framework import mixins, permissions, status as drf_status, viewsets
 from core.common.exception.api_exception import ApiException
 from core.common.exception.api_response import ApiResponse
 from core.common.exception.api_status_enum import ResponseStatus
-from core.common.pagination import StandardPagination
 from q2.serializers import ScheduleSerializer
 from q2.views.task_view import IsAdminUser
 
@@ -18,7 +17,6 @@ class ScheduleViewSet(
 ):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ScheduleSerializer
-    pagination_class = StandardPagination
 
     def get_queryset(self):
         return Schedule.objects.all().order_by("-id")
