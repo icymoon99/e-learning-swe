@@ -52,7 +52,7 @@ export interface CreateScheduleParams {
   repeats?: number
   args?: string
   kwargs?: Record<string, unknown>
-  cron?: string
+  cron?: string | null
 }
 
 // 定时任务更新参数

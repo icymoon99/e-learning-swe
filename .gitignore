@@ -31,7 +31,6 @@ build/
 logs/
 static/
 media/
-tests/
 test-results/
 
 # Vue / Vite frontend
