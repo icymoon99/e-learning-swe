@@ -16,6 +16,7 @@ media
 .trae/
 .playwright-mcp/
 .superpowers/
+docs/
 
 # Virtual environment
 venv/
@@ -32,6 +33,7 @@ logs/
 static/
 media/
 test-results/
+memory/
 
 # Vue / Vite frontend
 web/node_modules/
