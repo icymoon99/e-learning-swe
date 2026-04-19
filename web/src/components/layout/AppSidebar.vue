@@ -21,6 +21,14 @@
       <el-menu-item index="/user/list">用户列表</el-menu-item>
     </el-sub-menu>
 
+    <el-sub-menu index="q2">
+      <template #title>
+        <el-icon><Timer /></el-icon>
+        <span>任务管理</span>
+      </template>
+      <el-menu-item index="/q2/tasks">Django-Q2 任务</el-menu-item>
+    </el-sub-menu>
+
     <el-sub-menu index="system">
       <template #title>
         <el-icon><Setting /></el-icon>
@@ -35,6 +43,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import { Odometer, User, Setting, Timer } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const appStore = useAppStore()
