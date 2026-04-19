@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 E-Learning SWE 教育平台后端，Django + DRF 提供 RESTful API。
 
-| 部分 | 技术栈 | 路径 | 说明 |
-| ---- | ------ | ---- | ---- |
-| 后端 | Django 5.2 + DRF | 根目录 | RESTful API，JWT 认证，Django-Q 异步任务 |
+| 部分 | 技术栈                             | 路径   | 说明                                              |
+| ---- | ---------------------------------- | ------ | ------------------------------------------------- |
+| 后端 | Django 5.2 + DRF                   | 根目录 | RESTful API，JWT 认证，Django-Q 异步任务          |
 | 前端 | Vue 3.5 + TS + Vite + Element Plus | `web/` | SPA 管理后台，Pinia 状态管理，Vue Router 动态路由 |
 
 ## 常用命令
@@ -94,7 +94,6 @@ e-learning-swe/
 - **异步任务**: Django-Q，通过 Redis + ORM 作为 broker
 - **数据库**: 默认 SQLite3，可通过 `DB_ENGINE=mysql` 切换 MySQL
 - **API 文档**: drf-spectacular，自动生成 OpenAPI schema (`/api/schema/`)
-- **详细规范见** `.claude/rules/django/` 目录
 
 ### 每个业务 app 的标准结构
 
@@ -175,9 +174,10 @@ e-learning-swe/web/
 ### Django 开发
 
 - 模型继承 `AbstractBaseModel`，模型名以 `El` 开头
-- 视图使用 `ViewSet`，通过 `@action` 扩展非标准接口
+- 视图使用 `ViewSet`，继承 `ModelViewSet` 或 `ReadOnlyModelViewSet`，通过 `@action` 扩展非标准接口
 - 时间格式: `"%Y-%m-%d %H:%M:%S"`，日期格式: `"%Y-%m-%d"`
 - 敏感配置必须来自环境变量
+- 详细规范见 `.claude/rules/django/` 目录
 
 ### 文档规范
 
