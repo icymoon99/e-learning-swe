@@ -15,24 +15,20 @@
     </el-menu-item>
 
     <!-- 动态菜单（根据 asyncRoutes 和权限渲染） -->
-    <template v-for="route in sidebarRoutes" :key="route.name as string">
-      <el-sub-menu v-if="route.children?.length" :index="route.name as string">
+    <template v-for="menu in sidebarMenus" :key="menu.name">
+      <el-sub-menu v-if="menu.children?.length" :index="menu.path">
         <template #title>
-          <el-icon><component :is="route.meta?.icon" /></el-icon>
-          <span>{{ route.meta?.title }}</span>
+          <el-icon><component :is="menu.icon" /></el-icon>
+          <span>{{ menu.title }}</span>
         </template>
         <el-menu-item
-          v-for="child in route.children"
-          :key="child.name as string"
-          :index="`/${route.path}/${child.path}`"
+          v-for="child in menu.children"
+          :key="child.name"
+          :index="child.path"
         >
-          {{ child.meta?.title }}
+          {{ child.title }}
         </el-menu-item>
       </el-sub-menu>
-      <el-menu-item v-else :index="`/${route.path}`">
-        <el-icon><component :is="route.meta?.icon" /></el-icon>
-        <template #title>{{ route.meta?.title }}</template>
-      </el-menu-item>
     </template>
   </el-menu>
 </template>
@@ -43,8 +39,8 @@ import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { usePermissionStore } from '@/stores/permission'
 import { asyncRoutes } from '@/router/routes'
-import * as ElementPlusIcons from '@element-plus/icons-vue'
 import { Odometer } from '@element-plus/icons-vue'
+import type { MenuItem as MenuRoute } from '@/types/permission'
 
 const route = useRoute()
 const appStore = useAppStore()
@@ -54,13 +50,38 @@ const activeMenu = computed(() => {
   return (route.meta.activeMenu as string) || route.path
 })
 
-// 根据权限过滤动态路由
-const sidebarRoutes = computed(() => {
-  return asyncRoutes.filter(r => {
-    if (!r.meta?.permission) return true
-    return permissionStore.permissions.includes('*') ||
-      permissionStore.permissions.includes(r.meta.permission as string)
-  })
+// 将 asyncRoutes 扁平化为菜单数据结构
+interface SidebarMenu {
+  name: string
+  path: string
+  icon: string
+  title: string
+  children?: { name: string; path: string; title: string }[]
+}
+
+const sidebarMenus = computed<SidebarMenu[]>(() => {
+  return asyncRoutes
+    .filter(r => {
+      if (!r.meta?.permission) return true
+      return permissionStore.permissions.includes('*') ||
+        permissionStore.permissions.includes(r.meta.permission as string)
+    })
+    .map(r => {
+      // 构建子路由的完整路径
+      const parentPath = r.path.startsWith('/') ? r.path : `/${r.path}`
+      const children = (r.children || []).map(c => ({
+        name: c.name as string,
+        path: `${parentPath}/${c.path}`,
+        title: (c.meta?.title as string) || '',
+      }))
+      return {
+        name: r.name as string,
+        path: parentPath,
+        icon: (r.meta?.icon as string) || '',
+        title: (r.meta?.title as string) || '',
+        children: children.length ? children : undefined,
+      }
+    })
 })
 </script>
 

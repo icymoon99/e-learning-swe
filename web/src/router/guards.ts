@@ -1,4 +1,4 @@
-import type { Router, RouteRecordRaw } from 'vue-router'
+import type { Router } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { usePermissionStore } from '@/stores/permission'
@@ -8,23 +8,6 @@ import { ElMessage } from 'element-plus'
 
 // 白名单路由 - 不需要登录
 const whiteList = ['/login', '/error/401', '/error/404']
-
-// 标记是否已添加动态路由
-let hasAddedAsyncRoutes = false
-
-function addAsyncRoutes(router: Router, permissions: string[]) {
-  if (hasAddedAsyncRoutes) return
-
-  const allowedRoutes = asyncRoutes.filter(route => {
-    if (!route.meta?.permission) return true
-    return permissions.includes('*') || permissions.includes(route.meta.permission as string)
-  })
-
-  allowedRoutes.forEach(route => {
-    router.addRoute(route as RouteRecordRaw)
-  })
-  hasAddedAsyncRoutes = true
-}
 
 export function setupRouterGuard(router: Router) {
   // 前置守卫
@@ -49,7 +32,6 @@ export function setupRouterGuard(router: Router) {
 
     // 检查认证状态
     if (!authStore.isAuthenticated) {
-      // 尝试刷新 Token
       if (authStore.refreshToken) {
         try {
           await authStore.refreshAccessToken()
@@ -62,27 +44,17 @@ export function setupRouterGuard(router: Router) {
       }
     }
 
-    // 加载用户信息（包含菜单和权限）
+    // 加载用户信息
     if (!userStore.userInfo) {
       try {
         await userStore.loadUserInfo()
-        // 添加动态路由
-        addAsyncRoutes(router, permissionStore.permissions)
-        // 重新导航到目标路由（因为路由刚被添加）
-        return { ...to, replace: true }
       } catch {
         authStore.logout()
         return `/login?redirect=${to.path}`
       }
     }
 
-    // 确保动态路由已添加（处理刷新页面时 store 已有缓存但路由未注册的情况）
-    if (!hasAddedAsyncRoutes && userStore.userInfo) {
-      addAsyncRoutes(router, permissionStore.permissions)
-      return { ...to, replace: true }
-    }
-
-    // 检查菜单权限（超级管理员跳过菜单检查）
+    // 检查菜单权限（超级管理员跳过）
     if (permissionStore.menus.length === 0 && !permissionStore.permissions.includes('*')) {
       ElMessage.error('您没有任何菜单权限')
       return '/error/401'
