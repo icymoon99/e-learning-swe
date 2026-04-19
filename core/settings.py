@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "ulid_django",
     "django_q",
     "q2",
+    "sandbox",
     "system",
     "user",
 ]

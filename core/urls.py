@@ -37,4 +37,5 @@ urlpatterns = [
     path("api/user/", include("user.urls")),
     path("api/system/", include("system.urls")),
     path("api/q2/", include("q2.urls")),
+    path("api/sandbox/", include("sandbox.urls")),
 ]

@@ -45,7 +45,10 @@ class ApiResponse(Response):
         参数错误时的响应
         """
         return ApiResponse(
-            status=ResponseStatus.PARAMETER_ERROR, message=message, **kwargs
+            status=ResponseStatus.PARAMETER_ERROR,
+            message=message,
+            http_status=drf_status.HTTP_400_BAD_REQUEST,
+            **kwargs,
         )
 
     @staticmethod

@@ -54,4 +54,30 @@ def aes_decrypt(encoded_text: str) -> str:
     # 使用 unpad 去除 PKCS7 填充
     original_text_bytes = unpad(decrypted_bytes, AES.block_size)
 
+def aes_encrypt_with_key(plain_text: str, key: bytes, iv: bytes) -> str:
+    """
+    AES/CBC/PKCS7 加密（自定义 key/iv）
+    :param plain_text: 原始字符串
+    :param key: AES 密钥（16/24/32 字节）
+    :param iv: 初始化向量（16 字节）
+    :return: base64 编码的加密字符串
+    """
+    padded_text = pad(plain_text.encode("utf-8"), AES.block_size)
+    generator = AES.new(key, AES.MODE_CBC, iv)
+    encrypted_bytes = generator.encrypt(padded_text)
+    return base64.b64encode(encrypted_bytes).decode("utf-8")
+
+
+def aes_decrypt_with_key(encoded_text: str, key: bytes, iv: bytes) -> str:
+    """
+    AES/CBC/PKCS7 解密（自定义 key/iv）
+    :param encoded_text: base64 编码的加密字符串
+    :param key: AES 密钥（16/24/32 字节）
+    :param iv: 初始化向量（16 字节）
+    :return: 解密后的原始字符串
+    """
+    generator = AES.new(key, AES.MODE_CBC, iv)
+    encoded_text_bytes = base64.b64decode(encoded_text)
+    decrypted_bytes = generator.decrypt(encoded_text_bytes)
+    original_text_bytes = unpad(decrypted_bytes, AES.block_size)
     return original_text_bytes.decode("utf-8")
