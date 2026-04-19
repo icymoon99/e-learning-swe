@@ -8,34 +8,32 @@
     active-text-color="#409eff"
     router
   >
+    <!-- 仪表盘（固定入口） -->
     <el-menu-item index="/dashboard">
       <el-icon><Odometer /></el-icon>
       <template #title>仪表盘</template>
     </el-menu-item>
 
-    <el-sub-menu index="user">
-      <template #title>
-        <el-icon><User /></el-icon>
-        <span>用户管理</span>
-      </template>
-      <el-menu-item index="/user/list">用户列表</el-menu-item>
-    </el-sub-menu>
-
-    <el-sub-menu index="q2">
-      <template #title>
-        <el-icon><Timer /></el-icon>
-        <span>任务管理</span>
-      </template>
-      <el-menu-item index="/q2/tasks">Django-Q2 任务</el-menu-item>
-    </el-sub-menu>
-
-    <el-sub-menu index="system">
-      <template #title>
-        <el-icon><Setting /></el-icon>
-        <span>系统管理</span>
-      </template>
-      <el-menu-item index="/system/menu">菜单管理</el-menu-item>
-    </el-sub-menu>
+    <!-- 动态菜单（根据 asyncRoutes 和权限渲染） -->
+    <template v-for="route in sidebarRoutes" :key="route.name as string">
+      <el-sub-menu v-if="route.children?.length" :index="route.name as string">
+        <template #title>
+          <el-icon><component :is="route.meta?.icon" /></el-icon>
+          <span>{{ route.meta?.title }}</span>
+        </template>
+        <el-menu-item
+          v-for="child in route.children"
+          :key="child.name as string"
+          :index="`/${route.path}/${child.path}`"
+        >
+          {{ child.meta?.title }}
+        </el-menu-item>
+      </el-sub-menu>
+      <el-menu-item v-else :index="`/${route.path}`">
+        <el-icon><component :is="route.meta?.icon" /></el-icon>
+        <template #title>{{ route.meta?.title }}</template>
+      </el-menu-item>
+    </template>
   </el-menu>
 </template>
 
@@ -43,13 +41,26 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { Odometer, User, Setting, Timer } from '@element-plus/icons-vue'
+import { usePermissionStore } from '@/stores/permission'
+import { asyncRoutes } from '@/router/routes'
+import * as ElementPlusIcons from '@element-plus/icons-vue'
+import { Odometer } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const appStore = useAppStore()
+const permissionStore = usePermissionStore()
 
 const activeMenu = computed(() => {
   return (route.meta.activeMenu as string) || route.path
+})
+
+// 根据权限过滤动态路由
+const sidebarRoutes = computed(() => {
+  return asyncRoutes.filter(r => {
+    if (!r.meta?.permission) return true
+    return permissionStore.permissions.includes('*') ||
+      permissionStore.permissions.includes(r.meta.permission as string)
+  })
 })
 </script>
 
