@@ -82,6 +82,21 @@ export const asyncRoutes: RouteRecordRaw[] = [
       },
     ],
   },
+  {
+    path: '/sandbox',
+    name: 'Sandbox',
+    component: () => import('@/layouts/default.vue'),
+    meta: { title: '沙箱管理', icon: 'Monitor', permission: 'sandbox:view' },
+    redirect: '/sandbox/instances',
+    children: [
+      {
+        path: 'instances',
+        name: 'SandboxInstances',
+        component: () => import('@/views/sandbox/instances/index.vue'),
+        meta: { title: '实例列表', permission: 'sandbox:view' },
+      },
+    ],
+  },
 ]
 
 export const routes = [...constantRoutes, ...asyncRoutes]

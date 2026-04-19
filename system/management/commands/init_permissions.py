@@ -91,6 +91,31 @@ class Command(BaseCommand):
             }
         )
 
+        # 3. Sandbox Management
+        sandbox_menu, _ = ElMenu.objects.get_or_create(
+            name="sandbox",
+            defaults={
+                "path": "/sandbox",
+                "title": "沙箱管理",
+                "icon": "Monitor",
+                "order": 3,
+                "permission": "sandbox:view",
+                "menu_type": "directory"
+            }
+        )
+
+        ElMenu.objects.get_or_create(
+            name="sandbox:instances",
+            defaults={
+                "path": "/sandbox/instances",
+                "title": "实例列表",
+                "parent": sandbox_menu,
+                "order": 1,
+                "permission": "sandbox:view",
+                "menu_type": "menu"
+            }
+        )
+
         # Delete old menus that no longer exist in frontend
         old_menu_names = [
             "dashboard", "dashboard:home",
