@@ -6,9 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 E-Learning SWE 教育平台后端，Django + DRF 提供 RESTful API。
 
-| 部分 | 技术栈           | 路径   | 说明                                     |
-| ---- | ---------------- | ------ | ---------------------------------------- |
+| 部分 | 技术栈 | 路径 | 说明 |
+| ---- | ------ | ---- | ---- |
 | 后端 | Django 5.2 + DRF | 根目录 | RESTful API，JWT 认证，Django-Q 异步任务 |
+| 前端 | Vue 3.5 + TS + Vite + Element Plus | `web/` | SPA 管理后台，Pinia 状态管理，Vue Router 动态路由 |
 
 ## 常用命令
 
@@ -42,6 +43,24 @@ uv pip install -r requirements.txt
 
 # 收集静态文件
 .venv/bin/python manage.py collectstatic --noinput
+```
+
+### 前端 (Vue)
+
+**所有 npm 操作必须在 `web/` 目录下执行。命令示例：`bash -c 'cd web && npm run build'`。**
+
+```bash
+# 安装依赖
+cd web && npm install
+
+# 启动开发服务器
+cd web && npm run dev        # 默认 http://localhost:3001
+
+# 类型检查 + 构建
+cd web && npm run build      # vue-tsc + vite build
+
+# 预览构建产物
+cd web && npm run preview
 ```
 
 ## 后端架构
@@ -94,6 +113,48 @@ app_name/
 │   └── *_test.py    # 功能测试文件
 ```
 
+## 前端架构
+
+### 项目结构
+
+```
+e-learning-swe/web/
+├── src/
+│   ├── api/              # API 请求封装（按业务模块分组）
+│   ├── components/       # 业务组件
+│   │   └── layout/       # 布局组件（AppSidebar 等）
+│   ├── router/           # 路由配置
+│   │   ├── index.ts      # 路由器创建（注册全部路由）
+│   │   ├── routes.ts     # 路由定义（constantRoutes + asyncRoutes）
+│   │   └── guards.ts     # 路由守卫（认证 + 权限检查）
+│   ├── stores/           # Pinia 状态管理
+│   │   ├── auth.ts       # 认证（token 管理、登录/登出）
+│   │   ├── user.ts       # 用户信息
+│   │   ├── permission.ts # 权限与菜单
+│   │   └── app.ts        # 应用全局状态
+│   ├── types/            # TypeScript 类型定义
+│   ├── utils/            # 工具函数（request.ts、storage.ts、aes.ts）
+│   ├── views/            # 页面视图（按业务模块分组）
+│   └── main.ts           # 应用入口
+├── tests/
+│   ├── fixtures/         # Playwright fixtures（auth.ts 认证）
+│   ├── pages/            # Page Object Model
+│   ├── specs/            # E2E 测试
+│   └── unit/             # 单元测试
+├── playwright.config.ts  # Playwright 配置
+└── vite.config.ts        # Vite 配置
+```
+
+### 关键技术点
+
+- **动态路由**: `router/index.ts` 创建时注册全部路由（含 `asyncRoutes`），路由守卫只负责权限检查
+- **认证存储**: `el_swe_access_token` / `el_swe_refresh_token` / `el_swe_token_expires_at`（localStorage，前缀 `el_swe_`）
+- **请求拦截**: `utils/request.ts` 自动附加 JWT Token，登录接口密码通过 AES 加密（CBC + PKCS7）
+- **侧边栏菜单**: 从 `asyncRoutes` 动态渲染，根据 `permissionStore.permissions` 过滤
+- **权限检查**: 超级管理员（权限 `*`）跳过菜单和路由权限检查
+- **API 代理**: Vite 开发服务器将 `/api` 代理到 `http://localhost:8600`
+- **测试**: Playwright E2E 使用 `context.addInitScript()` 注入 localStorage token，避免 `storageState` 与 SPA 冲突
+
 ## 开发规范
 
 ### 通用
@@ -101,6 +162,15 @@ app_name/
 - 所有代码和文档使用中文，符合项目需求
 - 遵循项目 rules: `.claude/rules/`
 - 提交信息格式: `<type>: <description>` (feat/fix/refactor/docs/test/chore)
+
+### Vue 开发
+
+- 组件使用 `<script setup lang="ts">`，优先 Composition API
+- 使用本地扩展库 `web/src/common/extensions/` 提供的扩展方法构建页面 UI
+- API 请求通过 `utils/request.ts` 封装，返回 `ApiResponse` 格式
+- 状态管理使用 Pinia store，避免组件内直接操作 localStorage
+- 路由新增：先在 `router/routes.ts` 的 `asyncRoutes` 中添加，侧边栏自动渲染
+- npm 命令必须在 `web/` 目录下执行（`bash -c 'cd web && npm run ...'`）
 
 ### Django 开发
 
@@ -116,6 +186,8 @@ app_name/
 - **计划文档**: `/docs/plan/`，命名格式 `YYYY-MM-DD-*-plan.md`
 - **TDD 文档**: `/docs/tdd/`，命名格式 `YYYY-MM-DD-*-tdd.md`
 - **API 文档**: `/docs/api/`，命名格式 `*-api.md`
+
+⚠️ **_新增、修改、删除文档时，通过obsidian cli的skill来操作，同步到obsidian的99_CodeDocs/e-learning-swe/目录下，并且目录结构保持一致。_**
 
 ### 完成开发后必做检查
 
