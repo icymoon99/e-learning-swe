@@ -38,6 +38,7 @@ test-results/
 web/node_modules/
 web/dist/
 web/playwright-report/
+web/.auth/
 web/.env
 web/.env.local
 web/.env.*.local

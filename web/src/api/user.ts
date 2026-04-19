@@ -6,7 +6,7 @@ import type { PaginatedResponse, ListParams } from '@/types/api'
  * 获取当前用户信息
  */
 export function getUserProfileApi() {
-  return get<UserInfo>('/user/profile/')
+  return get<UserInfo>('/user/admin/users/profile/')
 }
 
 /**

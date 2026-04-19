@@ -18,8 +18,8 @@ request.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // 请求体 AES 加密
-    if (config.data && ['post', 'put', 'patch'].includes(config.method?.toLowerCase() || '')) {
+    // 请求体 AES 加密（登录接口的密码已在 API 层单独加密，不需要再次加密整个请求体）
+    if (config.data && ['post', 'put', 'patch'].includes(config.method?.toLowerCase() || '') && config.url !== '/user/token/') {
       config.headers['Encrypted-Flag'] = 'true'
       config.data = encryptAES(JSON.stringify(config.data))
     }
