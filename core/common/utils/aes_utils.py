@@ -53,6 +53,8 @@ def aes_decrypt(encoded_text: str) -> str:
 
     # 使用 unpad 去除 PKCS7 填充
     original_text_bytes = unpad(decrypted_bytes, AES.block_size)
+    return original_text_bytes.decode("utf-8")
+
 
 def aes_encrypt_with_key(plain_text: str, key: bytes, iv: bytes) -> str:
     """

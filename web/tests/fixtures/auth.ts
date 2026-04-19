@@ -1,7 +1,8 @@
 import { test as base } from '@playwright/test'
 import type { Page, BrowserContext } from '@playwright/test'
 
-const ADMIN_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2NjQ1NDgwLCJpYXQiOjE3NzY1NTkwODAsImp0aSI6ImY0MjBlM2UzNTU1NzQwZWJhNTYzOWYwOGNjNDMxYTUyIiwidXNlcl9pZCI6IjAxS1BHRzJUMjY4SE45SzgwQ1g3RUZWMDczIn0.MHuHvUQIjEUE6GUSdIjv34i8svXr4nIfi2sV_0VQais'
+// Fresh token from backend login (exp: 1776698932 = 2026-04-20)
+const ADMIN_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2Njk4OTMyLCJpYXQiOjE3NzY2MTI1MzIsImp0aSI6IjM0MDQyOGU2NDQwMzRlNDJiMDhkZTRlMzFlYzM0NTUwIiwidXNlcl9pZCI6IjAxS1BKUVFRRlk0VkQ0UjcyRTJTNDE4OEo2In0.1WUDQCFwFAXWOR0BDGcvA4Gg3TY53UicCyZysReYZyY'
 
 async function setupAuth(context: BrowserContext, page: Page) {
   await context.addInitScript((token) => {
