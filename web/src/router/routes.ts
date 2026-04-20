@@ -97,6 +97,27 @@ export const asyncRoutes: RouteRecordRaw[] = [
       },
     ],
   },
+  {
+    path: '/agent',
+    name: 'Agent',
+    component: () => import('@/layouts/default.vue'),
+    meta: { title: 'Agent管理', icon: 'Monitor', permission: 'agent:view' },
+    redirect: '/agent/list',
+    children: [
+      {
+        path: 'list',
+        name: 'AgentList',
+        component: () => import('@/views/agent/list/index.vue'),
+        meta: { title: 'Agent列表', permission: 'agent:view' },
+      },
+      {
+        path: 'execution',
+        name: 'AgentExecution',
+        component: () => import('@/views/agent/execution/index.vue'),
+        meta: { title: '执行日志', permission: 'agent:view' },
+      },
+    ],
+  },
 ]
 
 export const routes = [...constantRoutes, ...asyncRoutes]
