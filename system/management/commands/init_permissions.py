@@ -116,6 +116,43 @@ class Command(BaseCommand):
             }
         )
 
+        # 4. Agent Management
+        agent_menu, _ = ElMenu.objects.get_or_create(
+            name="agent",
+            defaults={
+                "path": "/agent",
+                "title": "Agent管理",
+                "icon": "Robot",
+                "order": 4,
+                "permission": "agent:view",
+                "menu_type": "directory"
+            }
+        )
+
+        ElMenu.objects.get_or_create(
+            name="agent:list",
+            defaults={
+                "path": "/agent/list",
+                "title": "Agent列表",
+                "parent": agent_menu,
+                "order": 1,
+                "permission": "agent:view",
+                "menu_type": "menu"
+            }
+        )
+
+        ElMenu.objects.get_or_create(
+            name="agent:execution",
+            defaults={
+                "path": "/agent/execution",
+                "title": "执行日志",
+                "parent": agent_menu,
+                "order": 2,
+                "permission": "agent:view",
+                "menu_type": "menu"
+            }
+        )
+
         # Delete old menus that no longer exist in frontend
         old_menu_names = [
             "dashboard", "dashboard:home",
