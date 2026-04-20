@@ -38,4 +38,5 @@ urlpatterns = [
     path("api/system/", include("system.urls")),
     path("api/q2/", include("q2.urls")),
     path("api/sandbox/", include("sandbox.urls")),
+    path("api/agent/", include("agent.urls")),
 ]
