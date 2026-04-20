@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "django_q",
     "q2",
     "sandbox",
+    "agent",
     "system",
     "user",
 ]
