@@ -16,16 +16,31 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from deepagents import create_deep_agent
 
+from agent.context import GitContext
+from agent.middleware import GitSandboxMiddleware
 from agent.models import ElAgent, ElAgentExecutionLog
+from agent.services.sandbox_resolver import resolve_backend
 
 logger = logging.getLogger(__name__)
+
+GIT_SYSTEM_PROMPT_SUFFIX = (
+    "\n\n你是一个在沙箱环境中工作的 AI 编程助手。\n"
+    "你的工作目录是 /workspace，所有代码修改都在该目录下进行。\n"
+    "完成工作后，你必须以 JSON 格式输出以下字段（仅输出 JSON，不要其他内容）：\n"
+    '{\n'
+    '  "commit_message": "简洁的提交信息，符合 conventional commits 格式",\n'
+    '  "pr_title": "Pull Request 标题",\n'
+    '  "pr_description": "Pull Request 描述，包括做了什么、如何测试、注意事项",\n'
+    '  "summary": "本次工作的简要总结"\n'
+    '}'
+)
 
 
 class Orchestrator:
     """Agent 编排器（全局单例）"""
 
     def __init__(self) -> None:
-        self._agents: dict[str, Any] = {}  # agent_id -> CompiledStateGraph
+        self._agents: dict[str, Any] = {}
         self._lock = Lock()
 
     def get_or_create_agent(self, agent_id: str) -> Any:
@@ -42,10 +57,18 @@ class Orchestrator:
         llm = ChatOpenAI(model=agent_config.model)
         checkpointer = MemorySaver()
 
+        backend = resolve_backend(agent_config)
+
+        # 追加 Git 工作约束到 system_prompt
+        system_prompt = agent_config.system_prompt + GIT_SYSTEM_PROMPT_SUFFIX
+
         agent = create_deep_agent(
             model=llm,
-            system_prompt=agent_config.system_prompt,
+            system_prompt=system_prompt,
             checkpointer=checkpointer,
+            backend=backend,
+            context_schema=GitContext,
+            middleware=[GitSandboxMiddleware(backend=backend)],
         )
 
         logger.info("Agent 实例已创建: %s (id=%s)", agent_config.code, agent_id)
@@ -56,6 +79,12 @@ class Orchestrator:
         agent_id: str,
         message: str,
         thread_id: str,
+        agent_code: str = "",
+        task_branch: str = "",
+        git_repo_url: str = "",
+        git_platform: str = "",
+        git_base_path: str = "/workspace",
+        git_token_secret: str = "",
     ) -> dict[str, Any]:
         """
         执行 Agent 任务（同步阻塞）
@@ -63,7 +92,13 @@ class Orchestrator:
         Args:
             agent_id: Agent 配置 ID
             message: 任务指令
-            thread_id: 线程标识（同一 agent 可多 thread 并行）
+            thread_id: 线程标识
+            agent_code: Agent 编码（用于工作分支命名）
+            task_branch: 任务分支名
+            git_repo_url: Git 仓库地址（任务级）
+            git_platform: Git 平台类型（任务级）
+            git_base_path: 沙箱工作目录
+            git_token_secret: Token 环境变量 key
 
         Returns:
             {
@@ -86,9 +121,24 @@ class Orchestrator:
         error_msg = None
 
         try:
+            config: dict[str, Any] = {
+                "configurable": {"thread_id": thread_id, "agent_code": agent_code},
+            }
+
+            # 传递任务级 Git 配置
+            if git_repo_url:
+                config["context"] = GitContext(
+                    thread_id=thread_id,
+                    task_branch=task_branch,
+                    git_repo_url=git_repo_url,
+                    git_platform=git_platform,
+                    git_base_path=git_base_path,
+                    git_token_secret=git_token_secret,
+                )
+
             for chunk in agent.stream(
                 {"messages": [{"role": "user", "content": message}]},
-                config={"configurable": {"thread_id": thread_id}},
+                config=config,
                 stream_mode=["updates", "messages"],
             ):
                 if isinstance(chunk, dict):
