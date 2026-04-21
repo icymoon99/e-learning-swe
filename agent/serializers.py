@@ -29,6 +29,10 @@ class AgentExecutionLogSerializer(serializers.ModelSerializer):
         fields = [
             "id", "agent", "agent_code", "agent_name", "thread_id",
             "status", "status_display", "events", "result", "error_message",
+            "git_pr_url", "git_pr_number", "git_commit_hash",
             "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = [
+            "id", "created_at", "updated_at",
+            "git_pr_url", "git_pr_number", "git_commit_hash",
+        ]

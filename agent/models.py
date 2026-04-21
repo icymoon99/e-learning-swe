@@ -58,6 +58,17 @@ class ElAgentExecutionLog(AbstractBaseModel):
     result = models.JSONField(null=True, blank=True, verbose_name="执行结果")
     error_message = models.TextField(default="", verbose_name="错误信息")
 
+    # Git 工作流结果
+    git_pr_url = models.CharField(
+        max_length=512, default="", blank=True, verbose_name="PR 地址"
+    )
+    git_pr_number = models.IntegerField(
+        null=True, blank=True, verbose_name="PR 编号"
+    )
+    git_commit_hash = models.CharField(
+        max_length=64, default="", blank=True, verbose_name="最后一次 commit hash"
+    )
+
     class Meta:
         db_table = "el_agent_execution_log"
         verbose_name = "Agent 执行日志"
