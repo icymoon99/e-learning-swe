@@ -34,6 +34,7 @@ static/
 media/
 test-results/
 memory/
+.coverage
 
 # Vue / Vite frontend
 web/node_modules/
