@@ -166,3 +166,18 @@ def get_platform(platform: str, token: str, repo_url: str) -> GitPlatform:
         return GitLabPlatform(token=token, project_id=project_id)
     else:
         raise ValueError(f"Unsupported platform: {platform}")
+
+
+def get_platform_from_source(source_id: str) -> "GitPlatform":
+    """根据仓库源 ID 获取对应的 GitPlatform 实例。
+
+    Args:
+        source_id: ElGitSource 的 ULID 主键
+
+    Returns:
+        对应的 GitPlatform 实例
+    """
+    from git_source.models import ElGitSource
+
+    source = ElGitSource.objects.get(id=source_id)
+    return get_platform(source.platform, source.token, source.repo_url)

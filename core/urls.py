@@ -39,4 +39,6 @@ urlpatterns = [
     path("api/q2/", include("q2.urls")),
     path("api/sandbox/", include("sandbox.urls")),
     path("api/agent/", include("agent.urls")),
+    path("api/git-source/", include("git_source.urls")),
+    path("api/task/", include("task.urls")),
 ]
