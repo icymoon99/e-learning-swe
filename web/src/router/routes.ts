@@ -118,6 +118,21 @@ export const asyncRoutes: RouteRecordRaw[] = [
       },
     ],
   },
+  {
+    path: '/git-source',
+    name: 'GitSource',
+    component: () => import('@/layouts/default.vue'),
+    meta: { title: '仓库源管理', icon: 'Connection', permission: 'git_source:view' },
+    redirect: '/git-source/list',
+    children: [
+      {
+        path: 'list',
+        name: 'GitSourceList',
+        component: () => import('@/views/git-source/index.vue'),
+        meta: { title: '仓库源列表', permission: 'git_source:view' },
+      },
+    ],
+  },
 ]
 
 export const routes = [...constantRoutes, ...asyncRoutes]
