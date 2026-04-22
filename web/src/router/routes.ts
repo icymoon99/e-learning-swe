@@ -133,6 +133,27 @@ export const asyncRoutes: RouteRecordRaw[] = [
       },
     ],
   },
+  {
+    path: '/task',
+    name: 'Task',
+    component: () => import('@/layouts/default.vue'),
+    meta: { title: '任务管理', icon: 'Document', permission: 'task:view' },
+    redirect: '/task/list',
+    children: [
+      {
+        path: 'list',
+        name: 'TaskList',
+        component: () => import('@/views/task/list.vue'),
+        meta: { title: '任务列表', permission: 'task:view' },
+      },
+      {
+        path: ':id',
+        name: 'TaskDetail',
+        component: () => import('@/views/task/detail.vue'),
+        meta: { title: '任务详情', permission: 'task:view' },
+      },
+    ],
+  },
 ]
 
 export const routes = [...constantRoutes, ...asyncRoutes]
