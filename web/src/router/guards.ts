@@ -48,7 +48,9 @@ export function setupRouterGuard(router: Router) {
     if (!userStore.userInfo) {
       try {
         await userStore.loadUserInfo()
-      } catch {
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : '未知错误'
+        ElMessage.error(`加载用户信息失败：${msg}`)
         authStore.logout()
         return `/login?redirect=${to.path}`
       }

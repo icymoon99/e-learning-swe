@@ -54,10 +54,10 @@ export const useUserStore = defineStore('user', () => {
         setUserInfo(data.content)
         return data.content
       }
+      throw new Error(data.message || '获取用户信息失败')
     } finally {
       isLoading.value = false
     }
-    return null
   }
 
   const clearUserInfo = () => {
