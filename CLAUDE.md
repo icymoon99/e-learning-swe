@@ -181,13 +181,17 @@ e-learning-swe/web/
 
 ### 文档规范
 
-- **架构文档**: `docs/arch/`，命名格式 `YYYY-MM-DD-*-arch.md`
-- **规格文档**: `docs/spec/`，命名格式 `YYYY-MM-DD-*-spec.md`
-- **计划文档**: `docs/plan/`，命名格式 `YYYY-MM-DD-*-plan.md`
-- **TDD 文档**: `docs/tdd/`，命名格式 `YYYY-MM-DD-*-tdd.md`
-- **API 文档**: `docs/api/`，命名格式 `*-api.md`
+| 文档类型     | 项目路径 (`docs/*/`) | Obsidian 同步路径 (`99_CodeDocs/e-learning-swe/*/`) | 命名格式               |
+| :----------- | :------------------- | :-------------------------------------------------- | :--------------------- |
+| **架构文档** | `docs/arch/`         | `99_CodeDocs/e-learning-swe/arch/`                  | `YYYY-MM-DD-*-arch.md` |
+| **规格文档** | `docs/spec/`         | `99_CodeDocs/e-learning-swe/spec/`                  | `YYYY-MM-DD-*-spec.md` |
+| **计划文档** | `docs/plan/`         | `99_CodeDocs/e-learning-swe/plan/`                  | `YYYY-MM-DD-*-plan.md` |
+| **TDD 文档** | `docs/tdd/`          | `99_CodeDocs/e-learning-swe/tdd/`                   | `YYYY-MM-DD-*-tdd.md`  |
+| **API 文档** | `docs/api/`          | `99_CodeDocs/e-learning-swe/api/`                   | `*-api.md`             |
 
-⚠️ **_新增、修改、删除 `docs/` 下文档时，遵循 obsidian 的 `defuddle`、`json-canvas`、`obsidian-bases`、`obsidian-cli` 和 `obsidian-markdown` 的 skill 来操作，同步到 obsidian 的 `99_CodeDocs/e-learning-swe/*/` 下，并且和 `docs/*/` 保持一致。_**
+> ⚠️ **同步规则**：新增、修改、删除 `docs/` 下文档时，需使用 Obsidian 相关 skill（`defuddle`、`json-canvas`、`obsidian-bases`、`obsidian-cli`、`obsidian-markdown`）操作，确保两侧目录结构与内容保持一致。
+>
+> 🚫 **禁止**：直接通过文件命令（如 `mv`、`cp`、`rm`、`ls` 等）操作 `99_CodeDocs/e-learning-swe/` 下的文档。
 
 ### 完成开发后必做检查
 
