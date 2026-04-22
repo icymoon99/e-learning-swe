@@ -213,43 +213,6 @@ AI 任务的核心工作区，以对话流方式与 Agent 交互：
 }
 ```
 
-## 架构设计
-
-### Agent 执行流程
-
-```
-用户创建任务 → 绑定仓库源 → 发送指令 → 创建执行日志(running)
-    → Django-Q2 异步调度 → LangGraph Orchestrator 编译 Agent
-    → 沙箱环境执行 → 代码修改 → 自动 PR 创建
-    → 更新日志(completed) → 创建 AI 回复对话
-```
-
-### 认证机制
-
-- **JWT (SimpleJWT)**：Access Token 1 天 / Refresh Token 7 天
-- **Token 轮换**：每次刷新产生新 Token，旧 Token 自动加入黑名单
-- **密码加密**：登录请求中密码经 AES-CBC-PKCS7 加密传输
-- **RBAC**：基于角色的权限控制（用户/管理员）
-
-## 配置说明
-
-### 环境变量
-
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `DJANGO_DEBUG` | 调试模式 | `False` |
-| `DB_ENGINE` | 数据库引擎 | `sqlite3` |
-| `DB_NAME` | 数据库名 | — |
-| `DB_USER` | 数据库用户 | — |
-| `DB_PASSWORD` | 数据库密码 | — |
-| `DB_HOST` | 数据库地址 | — |
-| `DB_PORT` | 数据库端口 | — |
-| `DASHSCOPE_API_KEY` | 通义千问 API Key | — |
-| `GITLAB_URL` | GitLab 地址 | — |
-| `GITLAB_TOKEN` | GitLab Token | — |
-| `AES_KEY` | AES 加密密钥 | — |
-| `AES_IV` | AES 初始化向量 | — |
-
 ## 测试
 
 ```bash

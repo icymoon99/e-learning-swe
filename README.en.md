@@ -213,43 +213,6 @@ Start the backend and visit:
 }
 ```
 
-## Architecture
-
-### Agent Execution Flow
-
-```
-User creates task → Binds Git source → Sends instruction → Creates execution log (running)
-    → Django-Q2 async dispatch → LangGraph Orchestrator compiles Agent
-    → Sandbox execution → Code modifications → Automated PR creation
-    → Updates log (completed) → Creates AI response conversation
-```
-
-### Authentication
-
-- **JWT (SimpleJWT)**: Access Token 1 day / Refresh Token 7 days
-- **Token Rotation**: New token on each refresh, old token blacklisted
-- **Password Encryption**: AES-CBC-PKCS7 encryption during login
-- **RBAC**: Role-based access control (user/admin)
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DJANGO_DEBUG` | Debug mode | `False` |
-| `DB_ENGINE` | Database engine | `sqlite3` |
-| `DB_NAME` | Database name | — |
-| `DB_USER` | Database user | — |
-| `DB_PASSWORD` | Database password | — |
-| `DB_HOST` | Database host | — |
-| `DB_PORT` | Database port | — |
-| `DASHSCOPE_API_KEY` | DashScope API Key | — |
-| `GITLAB_URL` | GitLab URL | — |
-| `GITLAB_TOKEN` | GitLab Token | — |
-| `AES_KEY` | AES encryption key | — |
-| `AES_IV` | AES initialization vector | — |
-
 ## Testing
 
 ```bash
