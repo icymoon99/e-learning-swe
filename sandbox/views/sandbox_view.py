@@ -42,6 +42,8 @@ class SandboxInstanceViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance_id = str(instance.id)
+        service = SandboxService()
+        service.delete(instance)
         self.perform_destroy(instance)
         return ApiResponse.ok(content={"id": instance_id})
 

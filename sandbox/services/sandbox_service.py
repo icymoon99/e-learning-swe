@@ -30,7 +30,7 @@ class SandboxService:
         if instance.type in ("localdocker", "remotedocker"):
             container_name = f"sandbox-{instance.id}"
             if instance.type == "localdocker":
-                subprocess.run(
+                _ = subprocess.run(
                     ["docker", "stop", container_name],
                     capture_output=True,
                     text=True,
@@ -44,7 +44,7 @@ class SandboxService:
                     user=metadata.get("ssh_user", ""),
                     key_path=metadata.get("ssh_key_path_enc", ""),
                 )
-                execute_remote(
+                _ = execute_remote(
                     f"docker stop {shlex.quote(container_name)}",
                     ssh_config,
                     timeout=30,
@@ -63,3 +63,33 @@ class SandboxService:
     def get_backend(self, instance: ElSandboxInstance):
         """获取沙箱后端实例"""
         return get_backend(instance)
+
+    def delete(self, instance: ElSandboxInstance) -> None:
+        """删除沙箱：Docker 类型先移除容器，再删数据库记录"""
+        if instance.type == "localdocker":
+            container_name = f"sandbox-{instance.id}"
+            _ = subprocess.run(
+                ["docker", "rm", "-f", container_name],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+        elif instance.type == "remotedocker":
+            metadata = instance.metadata
+            ssh_config = SSHConfig(
+                host=metadata["ssh_host"],
+                port=metadata.get("ssh_port", 22),
+                user=metadata.get("ssh_user", ""),
+                key_path=metadata.get("ssh_key_path_enc", ""),
+            )
+            container_name = f"sandbox-{instance.id}"
+            try:
+                _ = execute_remote(
+                    f"docker rm -f {shlex.quote(container_name)}",
+                    ssh_config,
+                    timeout=15,
+                )
+            except Exception as e:
+                logger.warning("[Sandbox] 远程容器删除失败(非致命): %s", e)
+
+        logger.info("[Sandbox] 沙箱已删除: %s", instance.name)
