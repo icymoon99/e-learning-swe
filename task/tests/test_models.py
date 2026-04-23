@@ -112,3 +112,123 @@ class ElTaskConversationModelTest(TestCase):
             task=self.task, content="这是一条测试内容", comment_type="user"
         )
         self.assertIn("用户指令", str(conv))
+
+
+class ElTaskMemoryModelTest(TestCase):
+    def setUp(self):
+        from task.models import ElTaskMemory
+        self.Memory = ElTaskMemory
+        self.source = ElGitSource.objects.create(
+            name="test-github",
+            platform="github",
+            repo_url="https://github.com/owner/repo.git",
+            token="ghp_xxx",
+        )
+        self.task = ElTask.objects.create(
+            title="测试任务",
+            description="任务描述",
+            git_source=self.source,
+            source_branch="main",
+        )
+        self.agent = ElAgent.objects.create(code="analyzer", name="代码分析器")
+
+    def test_create_task_memory_success(self):
+        """成功创建任务记忆"""
+        memory = self.Memory.objects.create(
+            task=self.task,
+            agent=self.agent,
+            thread_id="thread-001",
+            execution_order=1,
+            summary="分析项目结构，识别3个需重构模块",
+            status="success",
+        )
+        self.assertIsNotNone(memory.id)
+        self.assertEqual(memory.execution_order, 1)
+        self.assertEqual(memory.status, "success")
+        self.assertEqual(memory.summary, "分析项目结构，识别3个需重构模块")
+
+    def test_create_memory_with_pr_info(self):
+        """创建包含 PR 信息的记忆"""
+        memory = self.Memory.objects.create(
+            task=self.task,
+            agent=self.agent,
+            thread_id="thread-001",
+            execution_order=1,
+            summary="完成用户认证模块",
+            commit_message="feat: add user auth module",
+            pr_url="https://github.com/owner/repo/pull/1",
+            commit_hash="abc123def456",
+            status="success",
+        )
+        self.assertEqual(memory.pr_url, "https://github.com/owner/repo/pull/1")
+        self.assertEqual(memory.commit_hash, "abc123def456")
+        self.assertEqual(memory.commit_message, "feat: add user auth module")
+
+    def test_create_failed_memory(self):
+        """记录失败的 Agent 执行"""
+        memory = self.Memory.objects.create(
+            task=self.task,
+            agent=self.agent,
+            thread_id="thread-001",
+            execution_order=1,
+            summary="尝试重构但失败",
+            status="failed",
+            error_message="数据库连接超时",
+        )
+        self.assertEqual(memory.status, "failed")
+        self.assertIn("超时", memory.error_message)
+
+    def test_memory_ordering(self):
+        """记忆按 execution_order 排序"""
+        self.Memory.objects.create(
+            task=self.task, agent=self.agent, thread_id="t2",
+            execution_order=2, summary="第二步", status="success",
+        )
+        self.Memory.objects.create(
+            task=self.task, agent=self.agent, thread_id="t1",
+            execution_order=1, summary="第一步", status="success",
+        )
+        memories = list(self.Memory.objects.filter(task=self.task).order_by("execution_order"))
+        self.assertEqual(memories[0].execution_order, 1)
+        self.assertEqual(memories[1].execution_order, 2)
+
+    def test_task_delete_cascades_to_memories(self):
+        """任务删除时，记忆级联删除"""
+        self.Memory.objects.create(
+            task=self.task, agent=self.agent, thread_id="t1",
+            execution_order=1, summary="测试", status="success",
+        )
+        task_id = self.task.id
+        self.task.delete()
+        self.assertEqual(self.Memory.objects.filter(task_id=task_id).count(), 0)
+
+    def test_agent_delete_sets_memory_agent_null(self):
+        """Agent 删除时，记忆中 agent 字段置空"""
+        memory = self.Memory.objects.create(
+            task=self.task, agent=self.agent, thread_id="t1",
+            execution_order=1, summary="测试", status="success",
+        )
+        self.agent.delete()
+        memory.refresh_from_db()
+        self.assertIsNone(memory.agent)
+
+    def test_task_related_name_memories(self):
+        """通过 related_name 获取记忆列表"""
+        self.Memory.objects.create(
+            task=self.task, agent=self.agent, thread_id="t1",
+            execution_order=1, summary="记忆1", status="success",
+        )
+        self.Memory.objects.create(
+            task=self.task, agent=self.agent, thread_id="t2",
+            execution_order=2, summary="记忆2", status="success",
+        )
+        self.assertEqual(self.task.memories.count(), 2)
+
+    def test_str_representation(self):
+        """字符串表示"""
+        memory = self.Memory.objects.create(
+            task=self.task, agent=self.agent, thread_id="t1",
+            execution_order=3, summary="测试", status="success",
+        )
+        self.assertIn("TaskMemory", str(memory))
+        self.assertIn("3", str(memory))
