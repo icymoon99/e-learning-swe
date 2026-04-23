@@ -146,12 +146,6 @@ export const asyncRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/task/list.vue'),
         meta: { title: '任务列表', permission: 'task:view' },
       },
-      {
-        path: ':id',
-        name: 'TaskDetail',
-        component: () => import('@/views/task/detail.vue'),
-        meta: { title: '任务详情', permission: 'task:view' },
-      },
     ],
   },
 ]
