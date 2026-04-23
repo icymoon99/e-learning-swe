@@ -61,6 +61,7 @@ def execute_task_conversation(
                 if task.git_source
                 else ""
             ),
+            task_id=task_id,
         )
 
         # 更新执行日志状态

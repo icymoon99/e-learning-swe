@@ -20,6 +20,7 @@ from agent.context import GitContext
 from agent.middleware import GitSandboxMiddleware
 from agent.models import ElAgent, ElAgentExecutionLog
 from agent.services.sandbox_resolver import resolve_backend
+from task.middleware.task_memory import TaskMemoryMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -43,14 +44,15 @@ class Orchestrator:
         self._agents: dict[str, Any] = {}
         self._lock = Lock()
 
-    def get_or_create_agent(self, agent_id: str) -> Any:
+    def get_or_create_agent(self, agent_id: str, task_id: str = "") -> Any:
         """获取或创建 Agent 实例（线程安全）"""
         with self._lock:
-            if agent_id not in self._agents:
-                self._agents[agent_id] = self._build_agent(agent_id)
-            return self._agents[agent_id]
+            cache_key = f"{agent_id}:{task_id}"
+            if cache_key not in self._agents:
+                self._agents[cache_key] = self._build_agent(agent_id, task_id)
+            return self._agents[cache_key]
 
-    def _build_agent(self, agent_id: str) -> Any:
+    def _build_agent(self, agent_id: str, task_id: str = "") -> Any:
         """根据 Agent 配置创建 deep agent 实例"""
         agent_config = ElAgent.objects.get(id=agent_id)
 
@@ -62,16 +64,26 @@ class Orchestrator:
         # 追加 Git 工作约束到 system_prompt
         system_prompt = agent_config.system_prompt + GIT_SYSTEM_PROMPT_SUFFIX
 
+        # 构建 middleware 列表
+        middleware_list = [GitSandboxMiddleware(backend=backend)]
+        if task_id:
+            middleware_list.insert(0, TaskMemoryMiddleware(task_id=task_id))
+
         agent = create_deep_agent(
             model=llm,
             system_prompt=system_prompt,
             checkpointer=checkpointer,
             backend=backend,
             context_schema=GitContext,
-            middleware=[GitSandboxMiddleware(backend=backend)],
+            middleware=middleware_list,
         )
 
-        logger.info("Agent 实例已创建: %s (id=%s)", agent_config.code, agent_id)
+        logger.info(
+            "Agent 实例已创建: %s (id=%s, task_id=%s)",
+            agent_config.code,
+            agent_id,
+            task_id or "none",
+        )
         return agent
 
     def execute(
@@ -85,6 +97,7 @@ class Orchestrator:
         git_platform: str = "",
         git_base_path: str = "/workspace",
         git_token_secret: str = "",
+        task_id: str = "",
     ) -> dict[str, Any]:
         """
         执行 Agent 任务（同步阻塞）
@@ -108,7 +121,7 @@ class Orchestrator:
                 "execution_log_id": str,
             }
         """
-        agent = self.get_or_create_agent(agent_id)
+        agent = self.get_or_create_agent(agent_id, task_id=task_id)
 
         log = ElAgentExecutionLog.objects.create(
             agent_id=agent_id,
