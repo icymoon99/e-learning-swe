@@ -33,6 +33,8 @@ export interface Q2QueueStatus {
   queue_size: number
   tasks_running: number
   tasks_failed: number
+  total_success?: number
+  total_failure?: number
 }
 
 // 任务列表参数

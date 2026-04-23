@@ -39,17 +39,24 @@ class QueueViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=["get"], url_path="status")
     def status(self, request):
+        from django_q.models import Failure, Task
+
         broker = get_broker()
         try:
             queue_size = broker.queue_size()
         except Exception:
             queue_size = 0
 
+        running = Task.objects.filter(success__isnull=True).count()
+        failed = Task.objects.filter(success=False).count()
+
         return ApiResponse.ok(content={
             "worker_running": _is_worker_running(),
             "queue_size": queue_size,
-            "tasks_running": 0,
-            "tasks_failed": 0,
+            "tasks_running": running,
+            "tasks_failed": failed,
+            "total_success": Task.objects.filter(success=True).count(),
+            "total_failure": Failure.objects.count(),
         })
 
     @action(detail=False, methods=["post"], url_path="pause")
