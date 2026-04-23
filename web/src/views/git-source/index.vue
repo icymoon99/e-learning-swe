@@ -387,7 +387,7 @@ async function handleDelete(row: GitSource) {
     ElMessage.success('删除成功')
     loadData()
   } catch {
-    // 用户取消
+    // 响应拦截器已显示具体错误信息
   }
 }
 

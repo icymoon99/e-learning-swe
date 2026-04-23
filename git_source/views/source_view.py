@@ -1,3 +1,4 @@
+from django.db.models import ProtectedError
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -73,7 +74,13 @@ class GitSourceViewSet(viewsets.ModelViewSet):
                 http_status=status.HTTP_403_FORBIDDEN,
             )
         instance = self.get_object()
-        self.perform_destroy(instance)
+        try:
+            self.perform_destroy(instance)
+        except ProtectedError:
+            return ApiResponse(
+                message=f"仓库源「{instance.name}」已被任务关联，无法删除。请先删除或解绑相关任务后再试。",
+                http_status=status.HTTP_409_CONFLICT,
+            )
         return ApiResponse.ok(message="删除成功")
 
     @action(detail=False, methods=["get"])
