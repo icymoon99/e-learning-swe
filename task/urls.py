@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from task.views import TaskViewSet, ConversationViewSet
+from task.views import TaskViewSet, ConversationViewSet, MemoryViewSet
 
 router = DefaultRouter()
 router.register(r"tasks", TaskViewSet, basename="task")
@@ -11,5 +11,10 @@ urlpatterns = [
     path(
         "tasks/<str:task_pk>/conversations/",
         ConversationViewSet.as_view({"get": "list", "post": "create"}),
+    ),
+    path(
+        "tasks/<str:task_pk>/memories/",
+        MemoryViewSet.as_view({"get": "list"}),
+        name="task-memory-list",
     ),
 ]

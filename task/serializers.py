@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from task.models import ElTask, ElTaskConversation, TASK_STATUS_CHOICES
+from task.models import ElTask, ElTaskConversation, ElTaskMemory, TASK_STATUS_CHOICES
 
 
 class GitSourceNestedSerializer(serializers.Serializer):
@@ -171,3 +171,27 @@ class ConversationCreateSerializer(serializers.Serializer):
 
     content = serializers.CharField(required=True)
     agent_code = serializers.CharField(required=True, max_length=128)
+
+
+class TaskMemorySerializer(serializers.ModelSerializer):
+    """任务记忆序列化器"""
+
+    agent_name = serializers.CharField(
+        source="agent.name", read_only=True, allow_null=True
+    )
+
+    class Meta:
+        model = ElTaskMemory
+        fields = [
+            "id",
+            "agent_name",
+            "execution_order",
+            "summary",
+            "commit_message",
+            "pr_url",
+            "commit_hash",
+            "status",
+            "error_message",
+            "created_at",
+        ]
+        read_only_fields = fields
