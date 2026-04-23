@@ -360,7 +360,7 @@ async function handleSave() {
     formVisible.value = false
     loadData()
   } catch {
-    ElMessage.error('保存失败')
+    // 响应拦截器已显示具体错误信息，此处不再重复提示
   }
 }
 

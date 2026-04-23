@@ -1,6 +1,6 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
-import { encryptAES, decryptAES } from './aes'
+import { decryptAES } from './aes'
 import { storage } from './storage'
 import type { ApiResponse } from '@/types/api'
 
@@ -18,11 +18,7 @@ request.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // 请求体 AES 加密（登录接口的密码已在 API 层单独加密，不需要再次加密整个请求体）
-    if (config.data && ['post', 'put', 'patch'].includes(config.method?.toLowerCase() || '') && config.url !== '/user/token/') {
-      config.headers['Encrypted-Flag'] = 'true'
-      config.data = encryptAES(JSON.stringify(config.data))
-    }
+    // 登录接口的密码已在 API 层单独通过 AES 加密，此处不需要处理
 
     return config
   },
