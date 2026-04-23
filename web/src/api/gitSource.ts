@@ -5,6 +5,8 @@ import type {
   GitSourceListParams,
   CreateGitSourceParams,
   UpdateGitSourceParams,
+  RemoteRepo,
+  RemoteBranchesResponse,
 } from '@/types/gitSource'
 
 const BASE_URL = '/git-source/sources/'
@@ -33,4 +35,19 @@ export function deleteGitSourceApi(id: string) {
 // 下拉选项（创建任务时选择仓库源）
 export function getGitSourceDropdownApi() {
   return get<Array<{ id: string; name: string; platform: string }>>(`${BASE_URL}dropdown/`)
+}
+
+// 远程仓库查询（根据 Token 从 Git 平台获取）
+export function getRemoteReposApi(params: { platform: string; token: string; api_url?: string }) {
+  return get<{ repos: RemoteRepo[] }>(`${BASE_URL}repos/`, { params })
+}
+
+// 远程分支查询（根据 Token 从 Git 平台获取）
+export function getRemoteBranchesApi(params: {
+  platform: string
+  token: string
+  repo_full_name: string
+  api_url?: string
+}) {
+  return get<RemoteBranchesResponse>(`${BASE_URL}branches/`, { params })
 }

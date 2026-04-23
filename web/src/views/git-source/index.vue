@@ -61,26 +61,65 @@
     </div>
 
     <!-- 创建/编辑对话框 -->
-    <el-dialog v-model="formVisible" :title="formTitle" width="600px" @closed="resetForm">
+    <el-dialog v-model="formVisible" :title="formTitle" width="650px" @closed="resetForm">
       <el-form :model="form" label-width="100px">
         <el-form-item label="名称" required>
           <el-input v-model="form.name" placeholder="仓库源名称" :disabled="!!editingId" />
         </el-form-item>
         <el-form-item label="平台" required>
-          <el-select v-model="form.platform" style="width: 100%">
+          <el-select v-model="form.platform" style="width: 100%" @change="onPlatformChange">
             <el-option label="GitHub" value="github" />
             <el-option label="Gitee" value="gitee" />
             <el-option label="GitLab" value="gitlab" />
           </el-select>
         </el-form-item>
-        <el-form-item label="仓库地址" required>
-          <el-input v-model="form.repo_url" placeholder="https://github.com/owner/repo.git" />
+        <el-form-item v-if="form.platform === 'gitlab'" label="平台地址">
+          <el-input v-model="form.api_url" placeholder="https://git.example.com（可选）" />
         </el-form-item>
-        <el-form-item label="Token" required>
-          <el-input v-model="form.token" type="password" show-password placeholder="访问令牌" />
+        <el-form-item label="Token" :required="!editingId">
+          <div class="flex gap-2 w-full">
+            <el-input
+              v-model="form.token"
+              type="password"
+              show-password
+              :placeholder="editingId ? '不修改请留空' : '访问令牌'"
+              class="flex-1"
+            />
+            <el-button
+              type="primary"
+              :loading="fetchingRepos"
+              :disabled="!form.platform || !form.token"
+              @click="handleFetchRepos"
+            >
+              获取仓库
+            </el-button>
+          </div>
+        </el-form-item>
+        <el-form-item label="仓库地址" required>
+          <el-select
+            v-model="form.repo_url"
+            filterable
+            placeholder="先输入 Token 并点击「获取仓库」"
+            style="width: 100%"
+            @change="onRepoChange"
+          >
+            <el-option
+              v-for="repo in remoteRepos"
+              :key="repo.full_name"
+              :label="`${repo.full_name} (${repo.default_branch})`"
+              :value="repo.url"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="默认分支">
-          <el-input v-model="form.default_branch" placeholder="main" />
+          <el-select v-model="form.default_branch" placeholder="选择分支" style="width: 100%">
+            <el-option
+              v-for="branch in remoteBranches"
+              :key="branch"
+              :label="branch"
+              :value="branch"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="form.description" type="textarea" :rows="2" placeholder="仓库描述" />
@@ -102,8 +141,10 @@ import {
   createGitSourceApi,
   updateGitSourceApi,
   deleteGitSourceApi,
+  getRemoteReposApi,
+  getRemoteBranchesApi,
 } from '@/api/gitSource'
-import type { GitSource, GitPlatform } from '@/types/gitSource'
+import type { GitSource, GitPlatform, RemoteRepo } from '@/types/gitSource'
 
 // 状态
 const loading = ref(false)
@@ -121,11 +162,18 @@ const formTitle = ref('添加仓库源')
 const form = ref({
   name: '',
   platform: 'github' as GitPlatform,
+  api_url: '',
   repo_url: '',
   token: '',
   default_branch: 'main',
   description: '',
 })
+
+// 远程仓库和分支数据
+const remoteRepos = ref<RemoteRepo[]>([])
+const remoteBranches = ref<string[]>([])
+const fetchingRepos = ref(false)
+const fetchingBranches = ref(false)
 
 // 加载数据
 async function loadData() {
@@ -165,11 +213,14 @@ function handleCreate() {
   form.value = {
     name: '',
     platform: 'github',
+    api_url: '',
     repo_url: '',
     token: '',
     default_branch: 'main',
     description: '',
   }
+  remoteRepos.value = []
+  remoteBranches.value = []
   formVisible.value = true
 }
 
@@ -180,12 +231,90 @@ function handleEdit(row: GitSource) {
   form.value = {
     name: row.name,
     platform: row.platform,
+    api_url: '',
     repo_url: row.repo_url,
     token: '',
     default_branch: row.default_branch,
     description: row.description,
   }
+  remoteRepos.value = []
+  remoteBranches.value = []
   formVisible.value = true
+}
+
+// 平台切换时清空远程数据
+function onPlatformChange() {
+  remoteRepos.value = []
+  remoteBranches.value = []
+  form.value.repo_url = ''
+  form.value.default_branch = 'main'
+  form.value.description = ''
+}
+
+// 获取远程仓库列表
+async function handleFetchRepos() {
+  if (!form.value.platform || !form.value.token) {
+    ElMessage.warning('请先选择平台并输入 Token')
+    return
+  }
+
+  fetchingRepos.value = true
+  try {
+    const resp = await getRemoteReposApi({
+      platform: form.value.platform,
+      token: form.value.token,
+      ...(form.value.platform === 'gitlab' && form.value.api_url
+        ? { api_url: form.value.api_url }
+        : {}),
+    })
+    const repos = resp.data.content?.repos || []
+    remoteRepos.value = repos
+    if (repos.length === 0) {
+      ElMessage.warning('该 Token 没有可访问的仓库')
+    } else {
+      ElMessage.success(`获取到 ${repos.length} 个仓库`)
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : '获取仓库列表失败'
+    ElMessage.error(msg)
+  } finally {
+    fetchingRepos.value = false
+  }
+}
+
+// 选择仓库后获取分支列表
+async function onRepoChange(url: string) {
+  if (!url || !form.value.token) return
+
+  // 从 remoteRepos 中找到对应仓库的 full_name
+  const repo = remoteRepos.value.find(r => r.url === url)
+  if (!repo) return
+
+  // 自动填充描述和默认分支
+  form.value.description = repo.description
+  form.value.default_branch = repo.default_branch
+
+  // 获取分支列表
+  fetchingBranches.value = true
+  try {
+    const resp = await getRemoteBranchesApi({
+      platform: form.value.platform,
+      token: form.value.token,
+      repo_full_name: repo.full_name,
+      ...(form.value.platform === 'gitlab' && form.value.api_url
+        ? { api_url: form.value.api_url }
+        : {}),
+    })
+    const data = resp.data.content
+    if (data?.branches) {
+      remoteBranches.value = data.branches
+    }
+  } catch {
+    // 分支获取失败不影响其他字段，仅提示
+    ElMessage.warning('获取分支列表失败')
+  } finally {
+    fetchingBranches.value = false
+  }
 }
 
 // 保存
@@ -195,20 +324,27 @@ async function handleSave() {
     return
   }
   if (!form.value.repo_url) {
-    ElMessage.warning('仓库地址为必填字段')
+    ElMessage.warning('请选择仓库地址')
+    return
+  }
+  if (!editingId.value && !form.value.token) {
+    ElMessage.warning('Token 为必填字段')
     return
   }
 
   try {
     if (editingId.value) {
-      await updateGitSourceApi(editingId.value, {
+      const updateData: Record<string, unknown> = {
         name: form.value.name,
         platform: form.value.platform,
         repo_url: form.value.repo_url,
-        ...(form.value.token && { token: form.value.token }),
         default_branch: form.value.default_branch,
         description: form.value.description,
-      })
+      }
+      if (form.value.token) {
+        updateData.token = form.value.token
+      }
+      await updateGitSourceApi(editingId.value, updateData)
       ElMessage.success('更新成功')
     } else {
       await createGitSourceApi({
@@ -232,11 +368,14 @@ function resetForm() {
   form.value = {
     name: '',
     platform: 'github',
+    api_url: '',
     repo_url: '',
     token: '',
     default_branch: 'main',
     description: '',
   }
+  remoteRepos.value = []
+  remoteBranches.value = []
   editingId.value = null
 }
 

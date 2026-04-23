@@ -38,3 +38,18 @@ export interface UpdateGitSourceParams {
   default_branch?: string
   description?: string
 }
+
+// 远程仓库（从 Git 平台 API 获取）
+export interface RemoteRepo {
+  name: string
+  full_name: string
+  url: string
+  default_branch: string
+  description: string
+}
+
+// 远程分支响应（从 Git 平台 API 获取）
+export interface RemoteBranchesResponse {
+  default_branch: string
+  branches: string[]
+}

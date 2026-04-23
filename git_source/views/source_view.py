@@ -82,3 +82,40 @@ class GitSourceViewSet(viewsets.ModelViewSet):
         sources = ElGitSource.objects.all().order_by("name")
         serializer = GitSourceDropdownSerializer(sources, many=True)
         return ApiResponse.ok(content=serializer.data)
+
+    @action(detail=False, methods=["get"])
+    def repos(self, request):
+        """获取远程仓库列表（根据 Token 查询）"""
+        platform = request.query_params.get("platform")
+        token = request.query_params.get("token")
+        api_url = request.query_params.get("api_url")
+
+        if not platform or not token:
+            return ApiResponse.parameter_error(message="platform 和 token 为必填参数")
+
+        from git_source.services.platform_api import list_remote_repos
+        try:
+            repos = list_remote_repos(platform, token, api_url)
+        except Exception as e:
+            return ApiResponse.error(message=f"获取仓库列表失败: {e}")
+
+        return ApiResponse.ok(content={"repos": repos})
+
+    @action(detail=False, methods=["get"])
+    def branches(self, request):
+        """获取指定仓库的分支列表（根据 Token 查询）"""
+        platform = request.query_params.get("platform")
+        token = request.query_params.get("token")
+        repo_full_name = request.query_params.get("repo_full_name")
+        api_url = request.query_params.get("api_url")
+
+        if not platform or not token or not repo_full_name:
+            return ApiResponse.parameter_error(message="platform、token 和 repo_full_name 为必填参数")
+
+        from git_source.services.platform_api import list_branches
+        try:
+            result = list_branches(platform, token, repo_full_name, api_url)
+        except Exception as e:
+            return ApiResponse.error(message=f"获取分支列表失败: {e}")
+
+        return ApiResponse.ok(content=result)
