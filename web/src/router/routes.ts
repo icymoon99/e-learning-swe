@@ -148,6 +148,21 @@ export const asyncRoutes: RouteRecordRaw[] = [
       },
     ],
   },
+  {
+    path: '/llm',
+    name: 'LLM',
+    component: () => import('@/layouts/default.vue'),
+    meta: { title: '大模型配置', icon: 'Cpu', permission: 'llm:view' },
+    redirect: '/llm/config',
+    children: [
+      {
+        path: 'config',
+        name: 'LLMConfig',
+        component: () => import('@/views/llm/index.vue'),
+        meta: { title: '供应商与模型', permission: 'llm:view' },
+      },
+    ],
+  },
 ]
 
 export const routes = [...constantRoutes, ...asyncRoutes]
