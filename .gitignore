@@ -48,3 +48,4 @@ web/.env.*.local
 
 # Git worktrees
 .worktrees/
+.worktrees/
