@@ -111,13 +111,28 @@ class GitSourceViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def branches(self, request):
         """获取指定仓库的分支列表（根据 Token 查询）"""
+        source_id = request.query_params.get("source_id")
         platform = request.query_params.get("platform")
         token = request.query_params.get("token")
         repo_full_name = request.query_params.get("repo_full_name")
         api_url = request.query_params.get("api_url")
 
+        # 如果传了 source_id，从数据库获取平台、token 和仓库信息
+        if source_id:
+            from git_source.models import ElGitSource
+            try:
+                source = ElGitSource.objects.get(id=source_id)
+                platform = source.platform
+                token = source.token
+                # 从 repo_url 中提取 repo_full_name
+                # 支持 https://github.com/owner/repo 和 git@github.com:owner/repo.git 格式
+                repo_url = source.repo_url.rstrip("/")
+                repo_full_name = repo_url.rsplit("/", 2)[-2] + "/" + repo_url.rsplit("/", 1)[-1].removesuffix(".git")
+            except ElGitSource.DoesNotExist:
+                return ApiResponse.error(message="仓库源不存在")
+
         if not platform or not token or not repo_full_name:
-            return ApiResponse.parameter_error(message="platform、token 和 repo_full_name 为必填参数")
+            return ApiResponse.parameter_error(message="platform、token 和 repo_full_name 为必填参数，或提供 source_id")
 
         from git_source.services.platform_api import list_branches
         try:

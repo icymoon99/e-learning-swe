@@ -144,12 +144,14 @@
           <el-input v-model="createForm.description" type="textarea" :rows="3" placeholder="输入任务描述" />
         </el-form-item>
         <el-form-item label="仓库源">
-          <el-select v-model="createForm.git_source_id" placeholder="选择仓库源" clearable style="width: 100%" @focus="loadDropdown">
+          <el-select v-model="createForm.git_source_id" placeholder="选择仓库源" clearable style="width: 100%" @focus="loadDropdown" @change="onGitSourceChange">
             <el-option v-for="item in gitSourceOptions" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="源分支">
-          <el-input v-model="createForm.source_branch" placeholder="main" />
+          <el-select v-model="createForm.source_branch" placeholder="选择分支" clearable style="width: 100%" :loading="branchLoading" @change="onCreateBranchChange">
+            <el-option v-for="branch in createBranchOptions" :key="branch" :label="branch" :value="branch" />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -168,7 +170,9 @@
           <el-input v-model="editForm.description" type="textarea" :rows="3" />
         </el-form-item>
         <el-form-item label="源分支">
-          <el-input v-model="editForm.source_branch" />
+          <el-select v-model="editForm.source_branch" placeholder="选择分支" clearable style="width: 100%" :loading="branchLoading">
+            <el-option v-for="branch in editBranchOptions" :key="branch" :label="branch" :value="branch" />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -278,7 +282,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Connection, View, Edit, CircleClose, Delete, Close } from '@element-plus/icons-vue'
 import {
@@ -292,7 +296,7 @@ import {
   sendCommandApi,
 } from '@/api/task'
 import { getAgentListApi } from '@/api/agent'
-import { getGitSourceDropdownApi } from '@/api/gitSource'
+import { getGitSourceDropdownApi, getRemoteBranchesApi } from '@/api/gitSource'
 import type { TaskItem, TaskStatus, TaskDetail, ConversationItem } from '@/types/task'
 
 // 状态
@@ -323,8 +327,13 @@ const editForm = ref({
 })
 
 // 仓库源
-const gitSourceOptions = ref<Array<{ id: string; name: string; platform: string }>>([])
+const gitSourceOptions = ref<Array<{ id: string; name: string; platform: string; default_branch?: string }>>([])
 const dropdownLoaded = ref(false)
+
+// 分支选项
+const createBranchOptions = ref<string[]>([])
+const editBranchOptions = ref<string[]>([])
+const branchLoading = ref(false)
 
 async function loadDropdown() {
   if (dropdownLoaded.value) return
@@ -335,6 +344,52 @@ async function loadDropdown() {
   } catch {
     // 忽略
   }
+}
+
+// 选择仓库源后加载分支
+async function onGitSourceChange(sourceId: string) {
+  const source = gitSourceOptions.value.find(s => s.id === sourceId)
+  if (!source) {
+    createBranchOptions.value = []
+    createForm.value.source_branch = 'main'
+    return
+  }
+  await loadBranches(source, 'create')
+}
+
+async function loadBranches(source: { id: string; name: string; platform: string; default_branch?: string }, mode: 'create' | 'edit') {
+  branchLoading.value = true
+  try {
+    const resp = await getRemoteBranchesApi({
+      source_id: source.id,
+    } as any)
+    const branches = resp.data.content?.branches || []
+    const defaultBranch = resp.data.content?.default_branch || source.default_branch || 'main'
+
+    if (mode === 'create') {
+      createBranchOptions.value = branches.length > 0 ? branches : [defaultBranch]
+      createForm.value.source_branch = defaultBranch
+    } else {
+      editBranchOptions.value = branches.length > 0 ? branches : [defaultBranch]
+      editForm.value.source_branch = defaultBranch
+    }
+  } catch {
+    // 如果 API 调用失败，使用默认分支
+    const defaultBranch = source.default_branch || 'main'
+    if (mode === 'create') {
+      createBranchOptions.value = [defaultBranch]
+      createForm.value.source_branch = defaultBranch
+    } else {
+      editBranchOptions.value = [defaultBranch]
+      editForm.value.source_branch = defaultBranch
+    }
+  } finally {
+    branchLoading.value = false
+  }
+}
+
+function onCreateBranchChange() {
+  // 创建时分支选择变化，可在此处添加额外逻辑
 }
 
 // 加载数据
@@ -371,6 +426,7 @@ function onPageSizeChange() {
 // 创建
 function handleCreate() {
   createForm.value = { title: '', description: '', git_source_id: null, source_branch: 'main' }
+  createBranchOptions.value = []
   createVisible.value = true
 }
 
@@ -393,8 +449,33 @@ async function handleCreateSave() {
 function handleEdit(row: TaskItem) {
   editId.value = row.id
   editForm.value = { title: row.title, description: '', source_branch: row.source_branch }
+  editBranchOptions.value = [row.source_branch] // 默认显示当前分支
   editVisible.value = true
 }
+
+// 监听编辑对话框打开，加载分支选项
+watch(editVisible, async (visible) => {
+  if (!visible || !editId.value) return
+  // 通过任务详情获取 git_source_id
+  try {
+    const resp = await getTaskDetailApi(editId.value!)
+    const gitSource = resp.data.content?.git_source
+    if (gitSource?.id) {
+      await loadBranches({
+        id: gitSource.id,
+        name: gitSource.name,
+        platform: gitSource.platform,
+        default_branch: (gitSource as any).default_branch,
+      }, 'edit')
+      // 如果当前分支不在选项里，手动加入
+      if (!editBranchOptions.value.includes(editForm.value.source_branch)) {
+        editBranchOptions.value.unshift(editForm.value.source_branch)
+      }
+    }
+  } catch {
+    // 忽略
+  }
+})
 
 async function handleEditSave() {
   if (!editForm.value.title) {
