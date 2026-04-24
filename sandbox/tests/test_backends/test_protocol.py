@@ -62,7 +62,9 @@ class TestLocalSystemBackend(unittest.TestCase):
 
     def setUp(self):
         self.test_dir = tempfile.mkdtemp(prefix="sandbox_test_")
-        self.backend = LocalSystemBackend(name="test", root_path=self.test_dir)
+        self.backend = LocalSystemBackend(
+            name="test", root_path=self.test_dir, work_dir=self.test_dir
+        )
 
     def tearDown(self):
         shutil.rmtree(self.test_dir, ignore_errors=True)
@@ -126,15 +128,40 @@ class TestLocalSystemBackend(unittest.TestCase):
         )
         self.assertIsNone(responses[0].error)
 
+    def test_work_dir_used_in_build_cmd(self):
+        """_build_cmd 应使用 work_dir 而非 root_path"""
+        backend = LocalSystemBackend(
+            name="test", root_path="/tmp", work_dir="/workspace"
+        )
+        cmd = backend._build_cmd("echo hello")
+        self.assertIn("/workspace", cmd)
+        self.assertNotIn("/tmp", cmd)
+
+    def test_reset_clears_work_dir(self):
+        """reset 应清空 work_dir 而非 root_path"""
+        root_dir = tempfile.mkdtemp(prefix="sandbox_root_")
+        work_dir = tempfile.mkdtemp(prefix="sandbox_work_")
+        test_file = os.path.join(work_dir, "test.txt")
+        with open(test_file, "w") as f:
+            f.write("data")
+
+        backend = LocalSystemBackend(
+            name="test", root_path=root_dir, work_dir=work_dir
+        )
+        backend.reset()
+
+        self.assertFalse(os.path.exists(test_file))
+        shutil.rmtree(root_dir, ignore_errors=True)
+        shutil.rmtree(work_dir, ignore_errors=True)
+
 
 class TestBackendFactory(unittest.TestCase):
     def test_create_local_system_from_factory(self):
         instance = ElSandboxInstance(
             name="factory-test",
             type="localsystem",
-            root_path="/tmp",
             status="active",
-            metadata={"work_dir": "/tmp"},
+            metadata={"root_path": "/tmp", "work_dir": "/tmp"},
         )
         backend = get_backend(instance)
         self.assertIsInstance(backend, LocalSystemBackend)
@@ -143,7 +170,6 @@ class TestBackendFactory(unittest.TestCase):
         instance = ElSandboxInstance(
             name="docker-factory",
             type="localdocker",
-            root_path="/workspace",
             status="active",
             metadata={"image": "sandbox:latest", "work_dir": "/workspace"},
         )
@@ -154,7 +180,6 @@ class TestBackendFactory(unittest.TestCase):
         instance = ElSandboxInstance(
             name="unknown",
             type="invalid_type",
-            root_path="/tmp",
         )
         with self.assertRaises(ValueError):
             get_backend(instance)

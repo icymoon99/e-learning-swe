@@ -14,9 +14,12 @@ logger = logging.getLogger(__name__)
 class RemoteSystemBackend(BaseSandboxBackend):
     """远程系统目录沙箱（通过 SSH 连接后在指定目录执行）"""
 
-    def __init__(self, name: str, root_path: str, ssh_config: SSHConfig):
+    def __init__(
+        self, name: str, root_path: str, ssh_config: SSHConfig, work_dir: str = "/workspace"
+    ):
         self._name = name
         self._root_path = root_path
+        self._work_dir = work_dir
         self._ssh_config = ssh_config
 
     @property
@@ -24,7 +27,7 @@ class RemoteSystemBackend(BaseSandboxBackend):
         return f"remote-system-{self._name}"
 
     def _build_cmd(self, inner_cmd: str) -> str:
-        return f"cd {shlex.quote(self._root_path)} && {inner_cmd}"
+        return f"cd {shlex.quote(self._work_dir)} && {inner_cmd}"
 
     def execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
         result = execute_remote(command, self._ssh_config, timeout=timeout or 300)
@@ -36,12 +39,12 @@ class RemoteSystemBackend(BaseSandboxBackend):
         )
 
     def ensure_dir(self) -> None:
-        """确保远程根目录存在"""
-        cmd = f"mkdir -p {shlex.quote(self._root_path)}"
+        """确保远程工作目录存在"""
+        cmd = f"mkdir -p {shlex.quote(self._work_dir)}"
         execute_remote(cmd, self._ssh_config)
 
     def reset(self) -> None:
         cmd = self._build_cmd(
-            f"rm -rf {shlex.quote(self._root_path)}/* {shlex.quote(self._root_path)}/.* 2>/dev/null; mkdir -p {shlex.quote(self._root_path)}"
+            f"rm -rf {shlex.quote(self._work_dir)}/* {shlex.quote(self._work_dir)}/.* 2>/dev/null; mkdir -p {shlex.quote(self._work_dir)}"
         )
         self.execute(cmd)

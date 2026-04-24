@@ -66,7 +66,8 @@ def get_backend(instance: ElSandboxInstance):
     elif instance.type == "localsystem":
         return LocalSystemBackend(
             name=instance.name,
-            root_path=instance.root_path,
+            root_path=metadata.get("root_path", "/tmp/"),
+            work_dir=metadata.get("work_dir", "/workspace"),
         )
 
     elif instance.type == "remotesystem":
@@ -91,7 +92,8 @@ def get_backend(instance: ElSandboxInstance):
         )
         return RemoteSystemBackend(
             name=instance.name,
-            root_path=instance.root_path,
+            root_path=metadata.get("root_path", "/tmp/"),
+            work_dir=metadata.get("work_dir", "/workspace"),
             ssh_config=ssh_config,
         )
 
