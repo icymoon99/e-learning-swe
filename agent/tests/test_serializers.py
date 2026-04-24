@@ -1,18 +1,27 @@
 from django.test import TestCase
 from agent.models import ElAgent, ElAgentExecutionLog
 from agent.serializers import AgentSerializer, AgentExecutionLogSerializer
+from llm.models import ElLLMProvider, ElLLMModel
 
 
 class TestAgentSerializer(TestCase):
     """AgentSerializer 测试"""
 
     def setUp(self):
+        self.provider = ElLLMProvider.objects.create(
+            code="anthropic", name="Anthropic"
+        )
+        self.llm_model = ElLLMModel.objects.create(
+            provider=self.provider,
+            model_code="claude-sonnet-4-6",
+            display_name="Claude Sonnet 4.6",
+        )
         self.agent = ElAgent.objects.create(
             code="serializer_test",
             name="Serializer Test Agent",
             description="Testing serializer",
             system_prompt="You are a test agent",
-            model="claude-sonnet-4-6",
+            llm_model=self.llm_model,
         )
 
     def test_valid_serialization(self):
@@ -22,7 +31,7 @@ class TestAgentSerializer(TestCase):
             "name": "数据分析 Agent",
             "description": "分析数据并生成报告",
             "system_prompt": "你是一个数据分析助手",
-            "model": "claude-sonnet-4-6",
+            "llm_model": self.llm_model.id,
         }
         serializer = AgentSerializer(data=data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
@@ -67,7 +76,15 @@ class TestAgentExecutionLogSerializer(TestCase):
     """AgentExecutionLogSerializer 测试"""
 
     def setUp(self):
-        self.agent = ElAgent.objects.create(code="exec_test", name="Exec Test")
+        self.provider = ElLLMProvider.objects.create(
+            code="anthropic", name="Anthropic"
+        )
+        self.llm_model = ElLLMModel.objects.create(
+            provider=self.provider,
+            model_code="claude-sonnet-4-6",
+            display_name="Claude Sonnet 4.6",
+        )
+        self.agent = ElAgent.objects.create(code="exec_test", name="Exec Test", llm_model=self.llm_model)
         self.log = ElAgentExecutionLog.objects.create(
             agent=self.agent,
             thread_id="thread-serial",

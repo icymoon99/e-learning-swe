@@ -1,5 +1,6 @@
 from django.db import models
 from core.models import AbstractBaseModel
+from llm.models import ElLLMModel
 
 
 AGENT_STATUS_CHOICES = (
@@ -22,7 +23,11 @@ class ElAgent(AbstractBaseModel):
     name = models.CharField(max_length=255, default="", verbose_name="Agent 名称")
     description = models.TextField(default="", verbose_name="功能描述")
     system_prompt = models.TextField(default="", verbose_name="系统提示词")
-    model = models.CharField(max_length=128, default="", verbose_name="LLM 模型")
+    llm_model = models.ForeignKey(
+        ElLLMModel, on_delete=models.PROTECT,
+        null=True, blank=True, related_name="agents",
+        verbose_name="LLM 模型"
+    )
     status = models.CharField(
         max_length=32,
         choices=AGENT_STATUS_CHOICES,

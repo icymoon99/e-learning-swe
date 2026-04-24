@@ -2,17 +2,26 @@ from unittest import mock
 from django.test import TestCase
 from agent.models import ElAgent, ElAgentExecutionLog
 from agent.orchestrator import Orchestrator
+from llm.models import ElLLMProvider, ElLLMModel
 
 
 class TestOrchestrator(TestCase):
     """Orchestrator 测试"""
 
     def setUp(self):
+        self.provider = ElLLMProvider.objects.create(
+            code="anthropic", name="Anthropic"
+        )
+        self.llm_model = ElLLMModel.objects.create(
+            provider=self.provider,
+            model_code="claude-sonnet-4-6",
+            display_name="Claude Sonnet 4.6",
+        )
         self.agent = ElAgent.objects.create(
             code="test_agent",
             name="Test Agent",
             system_prompt="You are a test agent",
-            model="claude-sonnet-4-6",
+            llm_model=self.llm_model,
         )
 
     def test_get_or_create_agent_caches_instance(self):

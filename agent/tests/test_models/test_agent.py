@@ -1,10 +1,21 @@
 from django.test import TestCase
 from django.db import IntegrityError
 from agent.models import ElAgent, ElAgentExecutionLog, AGENT_STATUS_CHOICES, EXECUTION_STATUS_CHOICES
+from llm.models import ElLLMProvider, ElLLMModel
 
 
 class TestElAgent(TestCase):
     """ElAgent 模型测试"""
+
+    def setUp(self):
+        self.provider = ElLLMProvider.objects.create(
+            code="openai", name="OpenAI"
+        )
+        self.llm_model = ElLLMModel.objects.create(
+            provider=self.provider,
+            model_code="claude-sonnet-4-6",
+            display_name="Claude Sonnet 4.6",
+        )
 
     def test_create_agent_with_defaults(self):
         """测试创建 Agent 并使用默认值"""
@@ -13,7 +24,7 @@ class TestElAgent(TestCase):
             name="代码审查 Agent",
             description="自动审查代码质量",
             system_prompt="你是一个代码审查助手",
-            model="claude-sonnet-4-6",
+            llm_model=self.llm_model,
         )
         self.assertEqual(agent.code, "code_review")
         self.assertEqual(agent.status, "active")
@@ -58,7 +69,17 @@ class TestElAgentExecutionLog(TestCase):
     """ElAgentExecutionLog 模型测试"""
 
     def setUp(self):
-        self.agent = ElAgent.objects.create(code="test", name="Test Agent")
+        self.provider = ElLLMProvider.objects.create(
+            code="openai", name="OpenAI"
+        )
+        self.llm_model = ElLLMModel.objects.create(
+            provider=self.provider,
+            model_code="gpt-4o",
+            display_name="GPT-4o",
+        )
+        self.agent = ElAgent.objects.create(
+            code="test", name="Test Agent", llm_model=self.llm_model
+        )
 
     def test_create_execution_log_with_defaults(self):
         """测试创建执行日志并使用默认值"""
