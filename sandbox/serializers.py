@@ -14,7 +14,6 @@ class SandboxInstanceSerializer(serializers.ModelSerializer):
             "name",
             "type",
             "type_display",
-            "root_path",
             "status",
             "status_display",
             "metadata",
@@ -34,6 +33,12 @@ class SandboxInstanceSerializer(serializers.ModelSerializer):
             if "ssh_host" not in metadata:
                 raise serializers.ValidationError(
                     {"metadata": "远程模式需要提供 ssh_host"}
+                )
+            if not (
+                metadata.get("ssh_key_path") or metadata.get("ssh_password")
+            ):
+                raise serializers.ValidationError(
+                    {"metadata": "远程模式需要提供 ssh_key_path 或 ssh_password 至少一个"}
                 )
 
         return data
