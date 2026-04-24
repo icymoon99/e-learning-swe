@@ -95,7 +95,6 @@ class Orchestrator:
         task_branch: str = "",
         git_repo_url: str = "",
         git_platform: str = "",
-        git_base_path: str = "/workspace",
         git_token_secret: str = "",
         task_id: str = "",
     ) -> dict[str, Any]:
@@ -110,7 +109,6 @@ class Orchestrator:
             task_branch: 任务分支名
             git_repo_url: Git 仓库地址（任务级）
             git_platform: Git 平台类型（任务级）
-            git_base_path: 沙箱工作目录
             git_token_secret: Token 环境变量 key
 
         Returns:
@@ -145,7 +143,6 @@ class Orchestrator:
                     task_branch=task_branch,
                     git_repo_url=git_repo_url,
                     git_platform=git_platform,
-                    git_base_path=git_base_path,
                     git_token_secret=git_token_secret,
                 )
 

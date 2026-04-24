@@ -57,22 +57,16 @@ class GitSandboxMiddleware(AgentMiddleware):
         )
 
         try:
-            self._execute_in_sandbox(f"cd {ctx.git_base_path} && rm -rf *")
+            self._execute_in_sandbox("rm -rf *")
+            self._execute_in_sandbox(f"git clone {ctx.git_repo_url} .")
             self._execute_in_sandbox(
-                f"cd {ctx.git_base_path} && git clone {ctx.git_repo_url} ."
-            )
-            self._execute_in_sandbox(
-                f"cd {ctx.git_base_path} && "
                 'git config user.name "Agent" && '
                 'git config user.email "agent@e-learning.local"'
             )
             self._execute_in_sandbox(
-                f"cd {ctx.git_base_path} && "
                 f"git checkout -B {ctx.task_branch} origin/{ctx.task_branch}"
             )
-            self._execute_in_sandbox(
-                f"cd {ctx.git_base_path} && git checkout -b {work_branch}"
-            )
+            self._execute_in_sandbox(f"git checkout -b {work_branch}")
             logger.info("GitSandboxMiddleware: 工作分支 %s 已创建", work_branch)
         except Exception as e:
             logger.error(
@@ -100,14 +94,14 @@ class GitSandboxMiddleware(AgentMiddleware):
 
         try:
             # git add + commit
-            self._execute_in_sandbox(f"cd {ctx.git_base_path} && git add -A")
+            self._execute_in_sandbox("git add -A")
             self._execute_in_sandbox(
-                f'cd {ctx.git_base_path} && git commit -m "{commit_msg}"'
+                f'git commit -m "{commit_msg}"'
             )
 
             # push
             self._execute_in_sandbox(
-                f"cd {ctx.git_base_path} && git push origin {work_branch}"
+                f"git push origin {work_branch}"
             )
 
             # 创建 PR（宿主机 REST API）

@@ -14,5 +14,4 @@ class GitContext:
     task_branch: str       # 任务分支名
     git_repo_url: str      # Git 仓库地址
     git_platform: str      # 平台类型：github / gitee / gitlab
-    git_base_path: str = "/workspace"       # 沙箱工作目录
     git_token_secret: str = ""              # Token 环境变量 key 名称

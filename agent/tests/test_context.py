@@ -31,7 +31,6 @@ class TestGitContext:
             git_repo_url="https://github.com/owner/repo.git",
             git_platform="github",
         )
-        assert ctx.git_base_path == "/workspace"
         assert ctx.git_token_secret == ""
 
     def test_custom_optional_fields(self):
@@ -41,10 +40,8 @@ class TestGitContext:
             task_branch="main",
             git_repo_url="https://github.com/owner/repo.git",
             git_platform="github",
-            git_base_path="/app/code",
             git_token_secret="MY_GITHUB_TOKEN",
         )
-        assert ctx.git_base_path == "/app/code"
         assert ctx.git_token_secret == "MY_GITHUB_TOKEN"
 
     def test_is_dataclass(self):
