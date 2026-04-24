@@ -8,7 +8,6 @@ export interface SandboxInstance {
   name: string
   type: SandboxType
   type_display: string
-  root_path: string
   status: SandboxStatus
   status_display: string
   metadata: Record<string, unknown>
@@ -28,7 +27,6 @@ export interface SandboxListParams {
 export interface CreateSandboxParams {
   name: string
   type: SandboxType
-  root_path: string
   metadata: Record<string, unknown>
 }
 
@@ -41,4 +39,21 @@ export interface ExecuteResult {
   output: string
   exit_code: number
   truncated: boolean
+}
+
+// 沙箱类型 Schema（用于动态表单生成）
+
+export interface SandboxTypeSchema {
+  label: string
+  fields: Record<string, {
+    type: string
+    required: boolean
+    default?: unknown
+    label: string
+    hint: string
+  }>
+}
+
+export interface SandboxTypesResponse {
+  types: Record<string, SandboxTypeSchema>
 }

@@ -7,6 +7,8 @@ import type {
   ExecuteResult,
   SandboxType,
   SandboxStatus,
+  SandboxTypeSchema,
+  SandboxTypesResponse,
 } from '@/types/sandbox'
 
 describe('Sandbox Types', () => {
@@ -25,13 +27,12 @@ describe('Sandbox Types', () => {
   })
 
   describe('SandboxInstance', () => {
-    it('should create a valid instance object', () => {
+    it('should create a valid instance object without root_path', () => {
       const instance: SandboxInstance = {
         id: '01abc123',
         name: 'test-sandbox',
         type: 'localdocker',
         type_display: '本地 Docker',
-        root_path: '/workspace',
         status: 'active',
         status_display: '活跃',
         metadata: { image: 'sandbox:latest' },
@@ -41,6 +42,8 @@ describe('Sandbox Types', () => {
       expect(instance.name).toBe('test-sandbox')
       expect(instance.type).toBe('localdocker')
       expect(instance.status).toBe('active')
+      // root_path 已移除，不应存在于类型中
+      expect('root_path' in instance).toBe(false)
     })
 
     it('should have metadata as object', () => {
@@ -49,7 +52,6 @@ describe('Sandbox Types', () => {
         name: 'test',
         type: 'localsystem',
         type_display: '本地系统',
-        root_path: '/tmp',
         status: 'inactive',
         status_display: '未激活',
         metadata: {},
@@ -62,22 +64,22 @@ describe('Sandbox Types', () => {
   })
 
   describe('CreateSandboxParams', () => {
-    it('should create valid params for localdocker', () => {
+    it('should create valid params for localdocker without root_path', () => {
       const params: CreateSandboxParams = {
         name: 'new-sandbox',
         type: 'localdocker',
-        root_path: '/workspace',
         metadata: { image: 'sandbox:latest', work_dir: '/workspace' },
       }
       expect(params.name).toBe('new-sandbox')
       expect(params.metadata.image).toBe('sandbox:latest')
+      // root_path 已移除，不应存在于类型中
+      expect('root_path' in params).toBe(false)
     })
 
     it('should create valid params for remotedocker with ssh_host', () => {
       const params: CreateSandboxParams = {
         name: 'remote-sandbox',
         type: 'remotedocker',
-        root_path: '/home/sandbox',
         metadata: { ssh_host: '192.168.1.100', ssh_port: 22, image: 'sandbox:latest' },
       }
       expect(params.metadata.ssh_host).toBe('192.168.1.100')
@@ -126,6 +128,39 @@ describe('Sandbox Types', () => {
       }
       expect(params.type).toBe('localdocker')
       expect(params.page).toBe(1)
+    })
+  })
+
+  describe('SandboxTypeSchema', () => {
+    it('should have correct structure', () => {
+      const schema: SandboxTypeSchema = {
+        label: '本地系统',
+        fields: {
+          root_path: {
+            type: 'string',
+            required: true,
+            default: '/tmp/',
+            label: '沙箱根目录',
+            hint: '沙箱文件系统的隔离根目录',
+          },
+        },
+      }
+      expect(schema.label).toBe('本地系统')
+      expect(schema.fields.root_path.required).toBe(true)
+    })
+  })
+
+  describe('SandboxTypesResponse', () => {
+    it('should have correct structure', () => {
+      const response: SandboxTypesResponse = {
+        types: {
+          localsystem: {
+            label: '本地系统',
+            fields: {},
+          },
+        },
+      }
+      expect(response.types.localsystem.label).toBe('本地系统')
     })
   })
 })

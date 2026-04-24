@@ -6,6 +6,7 @@ import type {
   CreateSandboxParams,
   ExecuteCommandParams,
   ExecuteResult,
+  SandboxTypesResponse,
 } from '@/types/sandbox'
 
 const BASE = '/sandbox/instances/'
@@ -44,4 +45,10 @@ export function resetSandboxApi(id: string) {
 
 export function executeCommandApi(id: string, data: ExecuteCommandParams) {
   return post<ExecuteResult>(`${BASE}${id}/execute/`, data)
+}
+
+// 沙箱类型 Schema
+
+export function getSandboxTypesApi() {
+  return get<SandboxTypesResponse>('/sandbox/types/')
 }
