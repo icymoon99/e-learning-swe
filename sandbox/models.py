@@ -21,7 +21,6 @@ class ElSandboxInstance(AbstractBaseModel):
 
     name = models.CharField(max_length=128, verbose_name="沙箱名称")
     type = models.CharField(max_length=20, choices=SANDBOX_TYPES, verbose_name="沙箱类型")
-    root_path = models.CharField(max_length=512, verbose_name="沙箱文件根目录")
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,

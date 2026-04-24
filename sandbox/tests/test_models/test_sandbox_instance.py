@@ -11,7 +11,6 @@ class TestSandboxInstanceModel(TestCase):
         instance = ElSandboxInstance.objects.create(
             name="test-docker",
             type="localdocker",
-            root_path="/workspace",
             status="active",
             metadata={"image": "sandbox:latest", "work_dir": "/workspace"},
         )
@@ -25,7 +24,6 @@ class TestSandboxInstanceModel(TestCase):
         instance = ElSandboxInstance.objects.create(
             name="remote-sys",
             type="remotesystem",
-            root_path="/home/sandbox",
             metadata={
                 "work_dir": "/home/sandbox",
                 "ssh_host": "10.0.0.1",
@@ -43,7 +41,6 @@ class TestSandboxInstanceModel(TestCase):
             instance = ElSandboxInstance.objects.create(
                 name=f"test-{type_code}",
                 type=type_code,
-                root_path="/test",
             )
             self.assertEqual(instance.type, type_code)
 
@@ -52,7 +49,6 @@ class TestSandboxInstanceModel(TestCase):
         instance = ElSandboxInstance.objects.create(
             name="default-status",
             type="localsystem",
-            root_path="/test",
         )
         self.assertEqual(instance.status, "inactive")
 
@@ -61,7 +57,6 @@ class TestSandboxInstanceModel(TestCase):
         instance = ElSandboxInstance.objects.create(
             name="default-meta",
             type="localsystem",
-            root_path="/test",
         )
         self.assertIsInstance(instance.metadata, dict)
         self.assertEqual(len(instance.metadata), 0)
@@ -71,7 +66,6 @@ class TestSandboxInstanceModel(TestCase):
         instance = ElSandboxInstance.objects.create(
             name="my-sandbox",
             type="localdocker",
-            root_path="/test",
         )
         s = str(instance)
         self.assertIn("my-sandbox", s)
