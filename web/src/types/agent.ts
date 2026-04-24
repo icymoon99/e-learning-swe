@@ -7,7 +7,8 @@ export interface AgentInstance {
   name: string
   description: string
   system_prompt: string
-  model: string
+  llm_model: string | null
+  llm_model_display: string
   status: AgentStatus
   status_display: string
   metadata: Record<string, unknown>
@@ -53,7 +54,7 @@ export interface CreateAgentParams {
   name: string
   description?: string
   system_prompt?: string
-  model?: string
+  llm_model?: string | null
   status?: AgentStatus
   metadata?: Record<string, unknown>
 }

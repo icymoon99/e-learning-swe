@@ -29,7 +29,7 @@
     <el-table :data="tableData" v-loading="loading" stripe border>
       <el-table-column prop="code" label="编码" width="150" />
       <el-table-column prop="name" label="名称" min-width="150" show-overflow-tooltip />
-      <el-table-column prop="model" label="模型" width="180" show-overflow-tooltip />
+      <el-table-column prop="llm_model_display" label="LLM 模型" width="220" show-overflow-tooltip />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="getStatusTagType(row.status)" size="small">
@@ -76,7 +76,14 @@
           <el-input v-model="form.system_prompt" type="textarea" :rows="4" placeholder="系统提示词" />
         </el-form-item>
         <el-form-item label="LLM 模型">
-          <el-input v-model="form.model" placeholder="claude-sonnet-4-6" />
+          <el-select v-model="form.llm_model" placeholder="选择 LLM 模型" clearable style="width: 100%" @focus="loadModelOptions">
+            <el-option
+              v-for="m in llmModelOptions"
+              :key="m.id"
+              :label="`${m.provider_name} · ${m.display_name}`"
+              :value="m.id"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width: 100%">
@@ -102,7 +109,9 @@ import {
   updateAgentApi,
   deleteAgentApi,
 } from '@/api/agent'
+import { getLLMModelDropdownApi } from '@/api/llm'
 import type { AgentInstance, AgentStatus } from '@/types/agent'
+import type { LLMModelDropdown } from '@/types/llm'
 
 // 状态
 const loading = ref(false)
@@ -122,10 +131,23 @@ const form = ref({
   name: '',
   description: '',
   system_prompt: '',
-  model: 'claude-sonnet-4-6',
+  llm_model: null as string | null,
   status: 'active' as AgentStatus,
   metadata: {} as Record<string, unknown>,
 })
+
+// LLM 模型下拉选项
+const llmModelOptions = ref<LLMModelDropdown[]>([])
+const llmDropdownLoaded = ref(false)
+
+async function loadModelOptions() {
+  if (llmDropdownLoaded.value) return
+  try {
+    const resp = await getLLMModelDropdownApi()
+    llmModelOptions.value = resp.data.content || []
+    llmDropdownLoaded.value = true
+  } catch { /* 忽略 */ }
+}
 
 // 加载数据
 async function loadData() {
@@ -167,7 +189,7 @@ function handleCreate() {
     name: '',
     description: '',
     system_prompt: '',
-    model: 'claude-sonnet-4-6',
+    llm_model: null,
     status: 'active',
     metadata: {},
   }
@@ -183,7 +205,7 @@ function handleEdit(row: AgentInstance) {
     name: row.name,
     description: row.description,
     system_prompt: row.system_prompt,
-    model: row.model,
+    llm_model: row.llm_model,
     status: row.status,
     metadata: { ...row.metadata },
   }
@@ -203,7 +225,7 @@ async function handleSave() {
         name: form.value.name,
         description: form.value.description,
         system_prompt: form.value.system_prompt,
-        model: form.value.model,
+        llm_model: form.value.llm_model,
         status: form.value.status,
         metadata: form.value.metadata,
       })
@@ -214,7 +236,7 @@ async function handleSave() {
         name: form.value.name,
         description: form.value.description,
         system_prompt: form.value.system_prompt,
-        model: form.value.model,
+        llm_model: form.value.llm_model,
         status: form.value.status,
         metadata: form.value.metadata,
       })
@@ -233,7 +255,7 @@ function resetForm() {
     name: '',
     description: '',
     system_prompt: '',
-    model: 'claude-sonnet-4-6',
+    llm_model: null,
     status: 'active',
     metadata: {},
   }
