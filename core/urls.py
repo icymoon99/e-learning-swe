@@ -41,4 +41,5 @@ urlpatterns = [
     path("api/agent/", include("agent.urls")),
     path("api/git-source/", include("git_source.urls")),
     path("api/task/", include("task.urls")),
+    path("api/llm/", include("llm.urls")),
 ]
