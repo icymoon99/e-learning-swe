@@ -115,3 +115,17 @@ class SandboxInstanceCRUDTest(APITestCase):
         )
         resp = self.client.post(f"/api/sandbox/instances/{instance.id}/reset/")
         self.assertEqual(resp.status_code, 200)
+
+    def test_types_action(self):
+        """GET /api/sandbox/instances/types/ 返回所有类型和 schema"""
+        resp = self.client.get("/api/sandbox/instances/types/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("types", resp.data["content"])
+        types = resp.data["content"]["types"]
+        self.assertEqual(len(types), 4)
+        self.assertIn("localdocker", types)
+        self.assertIn("localsystem", types)
+        # 验证每种类型都有 label 和 fields
+        for type_name, type_schema in types.items():
+            self.assertIn("label", type_schema)
+            self.assertIn("fields", type_schema)

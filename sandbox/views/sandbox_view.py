@@ -5,6 +5,7 @@ from core.common.exception.api_response import ApiResponse
 from sandbox.filters import SandboxInstanceFilter
 from sandbox.models import ElSandboxInstance
 from sandbox.serializers import SandboxInstanceSerializer
+from sandbox.schemas import get_all_type_schemas
 from sandbox.services import SandboxService
 
 
@@ -87,3 +88,8 @@ class SandboxInstanceViewSet(viewsets.ModelViewSet):
                 "truncated": response.truncated,
             }
         )
+
+    @action(detail=False, methods=["get"], url_path="types")
+    def types(self, request):
+        """返回所有沙箱类型及其 schema，供前端动态表单渲染。"""
+        return ApiResponse.ok(content=get_all_type_schemas())
