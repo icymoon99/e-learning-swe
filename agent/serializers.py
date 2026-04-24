@@ -6,12 +6,18 @@ class AgentSerializer(serializers.ModelSerializer):
     """Agent 配置序列化器"""
 
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    llm_model_display = serializers.SerializerMethodField(read_only=True)
+
+    def get_llm_model_display(self, obj):
+        if obj.llm_model:
+            return f"{obj.llm_model.provider.name} · {obj.llm_model.display_name}"
+        return ""
 
     class Meta:
         model = ElAgent
         fields = [
             "id", "code", "name", "description", "system_prompt",
-            "model", "status", "status_display", "metadata",
+            "llm_model", "llm_model_display", "status", "status_display", "metadata",
             "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]

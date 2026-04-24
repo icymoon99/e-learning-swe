@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase, APIClient
 from agent.models import ElAgent, ElAgentExecutionLog
+from llm.models import ElLLMProvider, ElLLMModel
 
 ElUser = get_user_model()
 
@@ -14,8 +15,16 @@ class TestAgentViewSet(APITestCase):
             username="testadmin", password="testpass123", is_superuser=True
         )
         self.client.force_authenticate(user=self.user)
-        ElAgent.objects.create(code="agent_list_a", name="Agent A")
-        ElAgent.objects.create(code="agent_list_b", name="Agent B")
+        self.provider = ElLLMProvider.objects.create(
+            code="anthropic", name="Anthropic"
+        )
+        self.llm_model = ElLLMModel.objects.create(
+            provider=self.provider,
+            model_code="claude-sonnet-4-6",
+            display_name="Claude Sonnet 4.6",
+        )
+        ElAgent.objects.create(code="agent_list_a", name="Agent A", llm_model=self.llm_model)
+        ElAgent.objects.create(code="agent_list_b", name="Agent B", llm_model=self.llm_model)
 
     def test_list_agents(self):
         """测试列表接口返回所有 Agent"""
@@ -40,7 +49,7 @@ class TestAgentViewSet(APITestCase):
             "name": "New Agent",
             "description": "A new agent",
             "system_prompt": "You are new",
-            "model": "claude-sonnet-4-6",
+            "llm_model": self.llm_model.id,
         }
         resp = self.client.post("/api/agent/agents/", data, format="json")
         self.assertEqual(resp.status_code, 201, resp.json())

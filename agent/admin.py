@@ -4,7 +4,7 @@ from agent.models import ElAgent, ElAgentExecutionLog
 
 @admin.register(ElAgent)
 class ElAgentAdmin(admin.ModelAdmin):
-    list_display = ["code", "name", "model", "status", "created_at"]
+    list_display = ["code", "name", "llm_model", "status", "created_at"]
     list_filter = ["status", "created_at"]
     search_fields = ["code", "name"]
 

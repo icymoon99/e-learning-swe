@@ -56,7 +56,17 @@ class Orchestrator:
         """根据 Agent 配置创建 deep agent 实例"""
         agent_config = ElAgent.objects.get(id=agent_id)
 
-        llm = ChatOpenAI(model=agent_config.model)
+        if not agent_config.llm_model:
+            raise ValueError(f"Agent {agent_config.code} 未配置 LLM 模型")
+
+        llm_model = agent_config.llm_model
+        provider = llm_model.provider
+
+        llm = ChatOpenAI(
+            model=llm_model.model_code,
+            base_url=provider.resolved_base_url,
+            api_key=provider.decrypted_api_key,
+        )
         checkpointer = MemorySaver()
 
         backend = resolve_backend(agent_config)

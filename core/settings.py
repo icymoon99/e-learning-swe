@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "sandbox",
     "git_source",
     "task",
+    "llm",
     "agent",
     "system",
     "user",
