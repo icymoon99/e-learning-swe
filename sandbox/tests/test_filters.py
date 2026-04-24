@@ -18,13 +18,13 @@ class TestSandboxInstanceFilter(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         ElSandboxInstance.objects.create(
-            name="docker-1", type="localdocker", root_path="/test", status="active"
+            name="docker-1", type="localdocker", status="active"
         )
         ElSandboxInstance.objects.create(
-            name="sys-1", type="localsystem", root_path="/test2", status="inactive"
+            name="sys-1", type="localsystem", status="inactive"
         )
         ElSandboxInstance.objects.create(
-            name="docker-2", type="localdocker", root_path="/test3", status="active"
+            name="docker-2", type="localdocker", status="active"
         )
 
     def test_filter_by_type(self):

@@ -19,8 +19,8 @@ class TestSandboxService(TestCase):
         instance = ElSandboxInstance.objects.create(
             name="service-test",
             type="localsystem",
-            root_path=test_dir,
             status="inactive",
+            metadata={"root_path": test_dir, "work_dir": test_dir},
         )
 
         service = SandboxService()
@@ -41,8 +41,8 @@ class TestSandboxService(TestCase):
         instance = ElSandboxInstance.objects.create(
             name="reset-test",
             type="localsystem",
-            root_path=test_dir,
             status="active",
+            metadata={"root_path": test_dir, "work_dir": test_dir},
         )
 
         service = SandboxService()
@@ -56,7 +56,7 @@ class TestSandboxService(TestCase):
         instance = ElSandboxInstance.objects.create(
             name="get-backend-test",
             type="localsystem",
-            root_path="/tmp",
+            metadata={"root_path": "/tmp", "work_dir": "/tmp"},
         )
         service = SandboxService()
         backend = service.get_backend(instance)

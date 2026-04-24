@@ -21,7 +21,6 @@ class SandboxInstanceCRUDTest(APITestCase):
         data = {
             "name": "create-test",
             "type": "localdocker",
-            "root_path": "/workspace",
             "metadata": {"image": "sandbox:latest", "work_dir": "/workspace"},
         }
         resp = self.client.post("/api/sandbox/instances/", data, format="json")
@@ -32,7 +31,6 @@ class SandboxInstanceCRUDTest(APITestCase):
         data = {
             "name": "remote-bad",
             "type": "remotesystem",
-            "root_path": "/home/sandbox",
             "metadata": {"work_dir": "/home/sandbox"},
         }
         resp = self.client.post("/api/sandbox/instances/", data, format="json")
@@ -40,10 +38,10 @@ class SandboxInstanceCRUDTest(APITestCase):
 
     def test_list_instances(self):
         ElSandboxInstance.objects.create(
-            name="list-1", type="localsystem", root_path="/test"
+            name="list-1", type="localsystem"
         )
         ElSandboxInstance.objects.create(
-            name="list-2", type="localdocker", root_path="/test"
+            name="list-2", type="localdocker"
         )
         resp = self.client.get("/api/sandbox/instances/")
         self.assertEqual(resp.status_code, 200)
@@ -51,7 +49,7 @@ class SandboxInstanceCRUDTest(APITestCase):
 
     def test_retrieve_instance(self):
         instance = ElSandboxInstance.objects.create(
-            name="get-test", type="localsystem", root_path="/test"
+            name="get-test", type="localsystem"
         )
         resp = self.client.get(f"/api/sandbox/instances/{instance.id}/")
         self.assertEqual(resp.status_code, 200)
@@ -59,7 +57,7 @@ class SandboxInstanceCRUDTest(APITestCase):
 
     def test_update_instance(self):
         instance = ElSandboxInstance.objects.create(
-            name="old", type="localsystem", root_path="/test"
+            name="old", type="localsystem"
         )
         resp = self.client.patch(
             f"/api/sandbox/instances/{instance.id}/",
@@ -72,7 +70,7 @@ class SandboxInstanceCRUDTest(APITestCase):
 
     def test_delete_instance(self):
         instance = ElSandboxInstance.objects.create(
-            name="delete-me", type="localsystem", root_path="/test"
+            name="delete-me", type="localsystem"
         )
         resp = self.client.delete(f"/api/sandbox/instances/{instance.id}/")
         self.assertEqual(resp.status_code, 200)
@@ -80,7 +78,7 @@ class SandboxInstanceCRUDTest(APITestCase):
 
     def test_execute_missing_command(self):
         instance = ElSandboxInstance.objects.create(
-            name="exec-bad", type="localsystem", root_path="/tmp"
+            name="exec-bad", type="localsystem"
         )
         resp = self.client.post(
             f"/api/sandbox/instances/{instance.id}/execute/", {}, format="json"
@@ -90,7 +88,7 @@ class SandboxInstanceCRUDTest(APITestCase):
 
     def test_execute_localsystem(self):
         instance = ElSandboxInstance.objects.create(
-            name="exec-good", type="localsystem", root_path="/tmp"
+            name="exec-good", type="localsystem"
         )
         resp = self.client.post(
             f"/api/sandbox/instances/{instance.id}/execute/",
@@ -102,7 +100,8 @@ class SandboxInstanceCRUDTest(APITestCase):
 
     def test_start_instance(self):
         instance = ElSandboxInstance.objects.create(
-            name="start-test", type="localsystem", root_path="/tmp"
+            name="start-test", type="localsystem",
+            metadata={"work_dir": "/tmp/sandbox-start-test"},
         )
         resp = self.client.post(f"/api/sandbox/instances/{instance.id}/start/")
         self.assertEqual(resp.status_code, 200)
@@ -111,7 +110,8 @@ class SandboxInstanceCRUDTest(APITestCase):
 
     def test_reset_instance(self):
         instance = ElSandboxInstance.objects.create(
-            name="reset-api", type="localsystem", root_path="/tmp"
+            name="reset-api", type="localsystem",
+            metadata={"work_dir": "/tmp/sandbox-reset-test"},
         )
         resp = self.client.post(f"/api/sandbox/instances/{instance.id}/reset/")
         self.assertEqual(resp.status_code, 200)

@@ -42,6 +42,6 @@ class TestResolveBackend:
             result = resolve_backend(agent_config)
 
             mock_local.assert_called_once_with(
-                name="default", root_path="/workspace"
+                name="default", root_path="/workspace", work_dir="/workspace"
             )
             assert result is mock_backend
