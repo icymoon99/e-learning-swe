@@ -2,6 +2,7 @@ from django.db.models import ProtectedError
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from urllib.parse import urlparse
 
 from core.common.exception.api_response import ApiResponse
 from core.common.pagination import StandardPagination
@@ -124,10 +125,24 @@ class GitSourceViewSet(viewsets.ModelViewSet):
                 source = ElGitSource.objects.get(id=source_id)
                 platform = source.platform
                 token = source.token
-                # 从 repo_url 中提取 repo_full_name
-                # 支持 https://github.com/owner/repo 和 git@github.com:owner/repo.git 格式
+                # 从 repo_url 中提取 repo_full_name 和 api_url
+                # 支持 https://host/owner/repo 和 git@host:owner/repo.git 格式
                 repo_url = source.repo_url.rstrip("/")
-                repo_full_name = repo_url.rsplit("/", 2)[-2] + "/" + repo_url.rsplit("/", 1)[-1].removesuffix(".git")
+                if repo_url.startswith("git@"):
+                    # git@host:owner/repo.git
+                    host_path = repo_url[4:]  # host:owner/repo.git
+                    host, rest = host_path.split(":", 1)
+                else:
+                    # https://host/owner/repo
+                    parsed = urlparse(repo_url)
+                    host = parsed.netloc
+                    rest = parsed.path.strip("/")
+                    rest = rest[:-4] if rest.endswith(".git") else rest
+
+                repo_full_name = rest
+                # 对于私有 GitLab，从 repo_url 提取 API 地址
+                if platform == "gitlab":
+                    api_url = f"https://{host}" if not repo_url.startswith("http://") else f"http://{host}"
             except ElGitSource.DoesNotExist:
                 return ApiResponse.error(message="仓库源不存在")
 
