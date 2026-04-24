@@ -25,10 +25,7 @@
         @keyup.enter="loadData"
       />
       <el-select v-model="filterType" placeholder="类型" clearable style="width: 150px" @change="onFilterChange">
-        <el-option label="本地 Docker" value="localdocker" />
-        <el-option label="远程 Docker" value="remotedocker" />
-        <el-option label="本地系统" value="localsystem" />
-        <el-option label="远程系统" value="remotesystem" />
+        <el-option v-for="(schema, key) in sandboxTypes" :key="key" :label="schema.label" :value="key" />
       </el-select>
       <el-select v-model="filterStatus" placeholder="状态" clearable style="width: 120px" @change="onFilterChange">
         <el-option label="活跃" value="active" />
@@ -47,7 +44,6 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="root_path" label="根路径" min-width="180" show-overflow-tooltip />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="getStatusTagType(row.status)" size="small">
@@ -89,41 +85,37 @@
           <el-input v-model="form.name" placeholder="沙箱名称" />
         </el-form-item>
         <el-form-item label="类型" required>
-          <el-select v-model="form.type" style="width: 100%">
-            <el-option label="本地 Docker" value="localdocker" />
-            <el-option label="远程 Docker" value="remotedocker" />
-            <el-option label="本地系统" value="localsystem" />
-            <el-option label="远程系统" value="remotesystem" />
+          <el-select v-model="form.type" style="width: 100%" @change="onTypeChange">
+            <el-option v-for="(schema, key) in sandboxTypes" :key="key" :label="schema.label" :value="key" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="根路径" required>
-          <el-input v-model="form.root_path" placeholder="/workspace" />
         </el-form-item>
 
         <!-- 动态元信息字段 -->
-        <template v-if="form.type === 'localdocker' || form.type === 'remotedocker'">
-          <el-form-item label="镜像">
-            <el-input v-model="form.metadata.image" placeholder="sandbox:latest" />
-          </el-form-item>
-          <el-form-item label="工作目录">
-            <el-input v-model="form.metadata.work_dir" placeholder="/workspace" />
-          </el-form-item>
-        </template>
-
-        <template v-if="form.type.startsWith('remote')">
-          <el-form-item label="SSH 主机" required>
-            <el-input v-model="form.metadata.ssh_host" placeholder="192.168.1.100" />
-          </el-form-item>
-          <el-form-item label="SSH 端口">
-            <el-input-number v-model="form.metadata.ssh_port" :min="1" :max="65535" />
-          </el-form-item>
-          <el-form-item label="SSH 用户">
-            <el-input v-model="form.metadata.ssh_user" placeholder="root" />
-          </el-form-item>
-          <el-form-item label="SSH 密码">
-            <el-input v-model="form.metadata.ssh_password" type="password" show-password />
-          </el-form-item>
-        </template>
+        <el-form-item
+          v-for="(fieldMeta, fieldName) in currentFields"
+          :key="fieldName"
+          :label="fieldMeta.label"
+          :required="fieldMeta.required"
+        >
+          <el-input
+            v-if="fieldMeta.type === 'string'"
+            v-model="form.metadata[fieldName]"
+            :placeholder="fieldMeta.hint || ''"
+          />
+          <el-input-number
+            v-else-if="fieldMeta.type === 'number'"
+            v-model="form.metadata[fieldName]"
+            :min="1"
+            :max="65535"
+          />
+          <el-switch
+            v-else-if="fieldMeta.type === 'boolean'"
+            v-model="form.metadata[fieldName]"
+          />
+          <div v-if="fieldMeta.hint" class="text-xs text-gray-400 mt-1">
+            {{ fieldMeta.hint }}
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>
@@ -141,7 +133,6 @@
             {{ selectedInstance.type_display }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="根路径">{{ selectedInstance.root_path }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag :type="getStatusTagType(selectedInstance.status)" size="small">
             {{ selectedInstance.status_display }}
@@ -183,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -192,8 +183,9 @@ import {
   startSandboxApi,
   stopSandboxApi,
   resetSandboxApi,
+  getSandboxTypesApi,
 } from '@/api/sandbox'
-import type { SandboxInstance, SandboxType, SandboxStatus } from '@/types/sandbox'
+import type { SandboxInstance, SandboxType, SandboxStatus, SandboxTypeSchema } from '@/types/sandbox'
 import { getTypeTagType, getStatusTagType } from '@/utils/sandbox'
 
 // 状态
@@ -206,6 +198,9 @@ const searchName = ref('')
 const filterType = ref<SandboxType | ''>('')
 const filterStatus = ref<SandboxStatus | ''>('')
 
+// 沙箱类型 schema
+const sandboxTypes = ref<Record<string, SandboxTypeSchema>>({})
+
 // 创建/编辑表单
 const formVisible = ref(false)
 const editingId = ref<string | null>(null)
@@ -213,8 +208,13 @@ const formTitle = ref('创建实例')
 const form = ref({
   name: '',
   type: '' as SandboxType | '',
-  root_path: '',
   metadata: {} as Record<string, unknown>,
+})
+
+// 当前类型对应的表单字段
+const currentFields = computed(() => {
+  if (!form.value.type || !sandboxTypes.value[form.value.type]) return {}
+  return sandboxTypes.value[form.value.type].fields
 })
 
 // 详情抽屉
@@ -228,6 +228,16 @@ const executeCommand = ref('')
 const executeOutput = ref('')
 const executeLoading = ref(false)
 const executeResult = ref<{ exit_code: number; truncated: boolean } | null>(null)
+
+// 加载沙箱类型
+async function loadSandboxTypes() {
+  try {
+    const resp = await getSandboxTypesApi()
+    sandboxTypes.value = resp.data.content?.types || {}
+  } catch {
+    // 静默失败，使用空对象
+  }
+}
 
 // 加载数据
 async function loadData() {
@@ -265,11 +275,23 @@ function onPageSizeChange() {
   loadData()
 }
 
+// 类型切换时重置 metadata 默认值
+function onTypeChange() {
+  const schema = sandboxTypes.value[form.value.type as SandboxType]
+  if (!schema) return
+
+  const newMetadata: Record<string, unknown> = {}
+  for (const [key, field] of Object.entries(schema.fields)) {
+    newMetadata[key] = field.default ?? ''
+  }
+  form.value.metadata = newMetadata
+}
+
 // 创建
 function handleCreate() {
   editingId.value = null
   formTitle.value = '创建实例'
-  form.value = { name: '', type: '', root_path: '', metadata: {} }
+  form.value = { name: '', type: '', metadata: {} }
   formVisible.value = true
 }
 
@@ -277,41 +299,41 @@ function handleCreate() {
 function handleEdit(row: SandboxInstance) {
   editingId.value = row.id
   formTitle.value = '编辑实例'
-  form.value = { name: row.name, type: row.type, root_path: row.root_path, metadata: { ...row.metadata } }
+  form.value = { name: row.name, type: row.type, metadata: { ...row.metadata } }
   formVisible.value = true
 }
 
 // 保存
 async function handleSave() {
-  if (!form.value.name || !form.value.type || !form.value.root_path) {
+  if (!form.value.name || !form.value.type) {
     ElMessage.warning('请填写必填字段')
     return
   }
 
-  // 远程模式校验 ssh_host
-  if (form.value.type.startsWith('remote') && !form.value.metadata.ssh_host) {
-    ElMessage.warning('远程模式需要提供 SSH 主机')
-    return
+  // 校验 schema 必填字段
+  const schema = sandboxTypes.value[form.value.type]
+  if (schema) {
+    for (const [key, field] of Object.entries(schema.fields)) {
+      if (field.required && (form.value.metadata[key] === undefined || form.value.metadata[key] === '')) {
+        ElMessage.warning(`请填写必填字段: ${field.label}`)
+        return
+      }
+    }
   }
 
   const { createSandboxApi, updateSandboxApi } = await import('@/api/sandbox')
 
   try {
+    const payload = {
+      name: form.value.name,
+      type: form.value.type,
+      metadata: form.value.metadata,
+    }
     if (editingId.value) {
-      await updateSandboxApi(editingId.value, {
-        name: form.value.name,
-        type: form.value.type,
-        root_path: form.value.root_path,
-        metadata: form.value.metadata,
-      })
+      await updateSandboxApi(editingId.value, payload)
       ElMessage.success('更新成功')
     } else {
-      await createSandboxApi({
-        name: form.value.name,
-        type: form.value.type,
-        root_path: form.value.root_path,
-        metadata: form.value.metadata,
-      })
+      await createSandboxApi(payload)
       ElMessage.success('创建成功')
     }
     formVisible.value = false
@@ -322,7 +344,7 @@ async function handleSave() {
 }
 
 function resetForm() {
-  form.value = { name: '', type: '', root_path: '', metadata: {} }
+  form.value = { name: '', type: '', metadata: {} }
   editingId.value = null
 }
 
@@ -418,6 +440,7 @@ async function handleDelete(row: SandboxInstance) {
 }
 
 onMounted(() => {
+  loadSandboxTypes()
   loadData()
 })
 </script>
