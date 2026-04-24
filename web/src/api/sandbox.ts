@@ -50,5 +50,5 @@ export function executeCommandApi(id: string, data: ExecuteCommandParams) {
 // 沙箱类型 Schema
 
 export function getSandboxTypesApi() {
-  return get<SandboxTypesResponse>('/sandbox/types/')
+  return get<SandboxTypesResponse>('/sandbox/instances/types/')
 }
