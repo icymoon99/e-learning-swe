@@ -378,7 +378,7 @@ Q_CLUSTER = {
         "db": 0,
     },
     "orm": "default",  # 使用Django ORM作为broker
-    "retry": 600,
+    "retry": 36000,
     "max_attempts": 3,
     "ack_failures": True,
     "catch_up": False,
