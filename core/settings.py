@@ -366,7 +366,7 @@ Q_CLUSTER = {
     "name": "elearning_tasks",
     "workers": 4,
     "recycle": 500,
-    "timeout": 300,
+    "timeout": 28800,
     "compress": True,
     "save_limit": 250,
     "queue_limit": 500,
@@ -378,7 +378,7 @@ Q_CLUSTER = {
         "db": 0,
     },
     "orm": "default",  # 使用Django ORM作为broker
-    "retry": 300,
+    "retry": 600,
     "max_attempts": 3,
     "ack_failures": True,
     "catch_up": False,
