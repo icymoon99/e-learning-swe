@@ -78,7 +78,7 @@ const handleLogout = () => {
 
 <style scoped lang="scss">
 .app-header {
-  height: $header-height;
+  height: var(--header-height);
   display: flex;
   align-items: center;
   justify-content: space-between;

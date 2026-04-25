@@ -77,7 +77,7 @@ function isActive(path: string): boolean {
 
 <style scoped lang="scss">
 .sidebar {
-  width: $sidebar-width;
+  width: var(--sidebar-width);
   background: var(--sidebar-bg);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
@@ -90,7 +90,7 @@ function isActive(path: string): boolean {
   transition: width 220ms cubic-bezier(0.4, 0, 0.2, 1);
 
   &.collapsed {
-    width: $sidebar-collapsed-width;
+    width: var(--sidebar-collapsed-width);
   }
 }
 
