@@ -1,29 +1,21 @@
 <template>
-  <div class="header-container">
-    <div class="left-section">
-      <el-icon class="collapse-btn" :size="20" @click="toggleSidebar">
-        <Fold v-if="!appStore.sidebarCollapsed" />
-        <Expand v-else />
-      </el-icon>
-      <span class="page-title">{{ route.meta.title }}</span>
-    </div>
-
-    <div class="right-section">
-      <!-- 全屏按钮 -->
-      <el-tooltip content="全屏" placement="bottom">
-        <el-icon class="action-icon" :size="18" @click="toggleFullscreen">
-          <FullScreen />
+  <header class="app-header">
+    <div class="header-left">
+      <button class="collapse-btn" @click="toggleSidebar" aria-label="折叠侧边栏">
+        <el-icon :size="20">
+          <Fold v-if="!appStore.sidebarCollapsed" />
+          <Expand v-else />
         </el-icon>
-      </el-tooltip>
-
-      <!-- 用户菜单 -->
+      </button>
+      <span class="header-title">{{ route.meta.title }}</span>
+    </div>
+    <div class="header-right">
+      <button class="header-action" @click="toggleFullscreen" aria-label="全屏">
+        <el-icon :size="18"><FullScreen /></el-icon>
+      </button>
       <el-dropdown trigger="click" @command="handleCommand">
-        <div class="user-info">
-          <el-avatar :size="32">
-            <el-icon><User /></el-icon>
-          </el-avatar>
-          <span class="username">{{ userStore.displayName }}</span>
-          <el-icon><ArrowDown /></el-icon>
+        <div class="user-avatar">
+          {{ userStore.displayName?.charAt(0) || 'A' }}
         </div>
         <template #dropdown>
           <el-dropdown-menu>
@@ -35,16 +27,17 @@
         </template>
       </el-dropdown>
     </div>
-  </div>
+  </header>
 </template>
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionStore } from '@/stores/permission'
+import { Fold, Expand, FullScreen, SwitchButton } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,9 +46,7 @@ const userStore = useUserStore()
 const authStore = useAuthStore()
 const permissionStore = usePermissionStore()
 
-const toggleSidebar = () => {
-  appStore.toggleSidebar()
-}
+const toggleSidebar = () => appStore.toggleSidebar()
 
 const toggleFullscreen = () => {
   if (!document.fullscreenElement) {
@@ -81,74 +72,111 @@ const handleLogout = () => {
     userStore.clearUserInfo()
     permissionStore.clear()
     router.push('/login')
-    ElMessage.success('已退出登录')
   })
 }
 </script>
 
 <style scoped lang="scss">
-.header-container {
-  height: 100%;
+.app-header {
+  height: $header-height;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 24px;
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-light);
+  position: relative;
+  z-index: 5;
+  flex-shrink: 0;
+}
 
-  .left-section {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+.app-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+}
 
-    .collapse-btn {
-      cursor: pointer;
-      color: #666;
-      transition: color 0.3s;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 
-      &:hover {
-        color: #409eff;
-      }
-    }
+.collapse-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  background: none;
 
-    .page-title {
-      font-size: 16px;
-      font-weight: 500;
-      color: #333;
-    }
+  &:hover {
+    background: var(--primary-light);
+    color: var(--primary);
   }
+}
 
-  .right-section {
-    display: flex;
-    align-items: center;
-    gap: 20px;
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
 
-    .action-icon {
-      cursor: pointer;
-      color: #666;
-      transition: color 0.3s;
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-      &:hover {
-        color: #409eff;
-      }
-    }
+.header-action {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  background: none;
 
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      padding: 5px 10px;
-      border-radius: 4px;
-      transition: background-color 0.3s;
+  &:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+}
 
-      &:hover {
-        background-color: #f5f5f5;
-      }
+.user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary), #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: all 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px var(--primary-glow);
 
-      .username {
-        font-size: 14px;
-        color: #333;
-      }
-    }
+  &:hover {
+    box-shadow: 0 4px 16px var(--primary-glow);
+    transform: scale(1.05);
   }
 }
 </style>

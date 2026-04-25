@@ -1,7 +1,13 @@
 <template>
-  <div class="login-container">
+  <div class="login-container app-bg app-grid-overlay">
+    <!-- Background orbs -->
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
     <div class="login-card">
       <div class="login-header">
+        <div class="logo-icon"></div>
         <h1>E-Learning SWE</h1>
         <p>管理后台</p>
       </div>
@@ -108,29 +114,59 @@ const handleLogin = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
 }
 
 .login-card {
-  width: 400px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 40px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  width: 420px;
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border-glass);
+  border-radius: 20px;
+  padding: 48px 40px;
+  position: relative;
+  z-index: 2;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 15%;
+    right: 15%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  }
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
+
+  .logo-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary), #6366f1);
+    border-radius: 12px;
+    margin: 0 auto 16px;
+    box-shadow: 0 4px 16px var(--primary-glow);
+  }
 
   h1 {
-    font-size: 28px;
-    color: #333;
-    margin-bottom: 8px;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
   }
 
   p {
-    color: #999;
+    color: var(--text-secondary);
     font-size: 14px;
   }
 }
@@ -138,6 +174,15 @@ const handleLogin = async () => {
 .login-form {
   .login-btn {
     width: 100%;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 20px;
+  }
+
+  :deep(.el-input__wrapper) {
+    border-radius: 10px;
+    padding: 4px 12px;
   }
 }
 </style>

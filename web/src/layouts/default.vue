@@ -1,21 +1,17 @@
 <template>
-  <div class="app-wrapper">
+  <div class="app-wrapper app-bg app-grid-overlay">
+    <!-- Background orbs -->
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
     <!-- 侧边栏 -->
-    <div
-      class="sidebar"
-      :class="{ 'sidebar-collapsed': appStore.sidebarCollapsed }"
-    >
-      <div class="logo-container">
-        <span v-if="!appStore.sidebarCollapsed" class="logo-text">E-Learning SWE</span>
-        <span v-else class="logo-text">SWE</span>
-      </div>
-      <AppSidebar />
-    </div>
+    <AppSidebar />
 
     <!-- 主内容区 -->
     <div class="main-container">
       <!-- 顶栏 -->
-      <header class="app-header">
+      <header class="app-header-bar">
         <AppHeader />
       </header>
 
@@ -54,35 +50,7 @@ const appStore = useAppStore()
   height: 100vh;
   display: flex;
   overflow: hidden;
-}
-
-.sidebar {
-  width: $sidebar-width;
-  background-color: #304156;
-  transition: width 0.3s;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  overflow: hidden;
-
-  &.sidebar-collapsed {
-    width: $sidebar-collapsed-width;
-  }
-}
-
-.logo-container {
-  height: $header-height;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #263445;
-
-  .logo-text {
-    color: #fff;
-    font-size: 16px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
+  position: relative;
 }
 
 .main-container {
@@ -90,26 +58,27 @@ const appStore = useAppStore()
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
-.app-header {
-  height: $header-height;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
-  z-index: 10;
+.app-header-bar {
+  background: transparent;
 }
 
 .app-breadcrumb {
   padding: 8px 20px;
-  background: #fff;
-  border-bottom: 1px solid #ebeef5;
+  background: transparent;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .app-main {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
-  background-color: #f0f2f5;
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 // 页面过渡动画
