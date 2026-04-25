@@ -57,7 +57,8 @@ export function setupRouterGuard(router: Router) {
     }
 
     // 检查菜单权限（超级管理员跳过）
-    if (permissionStore.menus.length === 0 && !permissionStore.permissions.includes('*')) {
+    // 仅对需要权限的异步路由进行检查，基础路由（如 /dashboard）不拦截
+    if (to.meta?.permission && permissionStore.menus.length === 0 && !permissionStore.permissions.includes('*')) {
       ElMessage.error('您没有任何菜单权限')
       return '/error/401'
     }
