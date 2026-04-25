@@ -36,6 +36,10 @@ class ElAgent(AbstractBaseModel):
         verbose_name="状态",
     )
     metadata = models.JSONField(default=dict, verbose_name="扩展配置")
+    executor = models.ForeignKey(
+        'ElExecutor', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='agents', verbose_name='CLI 执行器'
+    )
 
     class Meta:
         db_table = "el_agent"
@@ -84,28 +88,20 @@ class ElAgentExecutionLog(AbstractBaseModel):
         return f"{self.agent.name} - {self.thread_id} ({self.status})"
 
 
-class ElExecutorConfig(AbstractBaseModel):
-    """CLI 执行器配置 — 决定哪些 CLI 工具可供指定 Agent 调用"""
+class ElExecutor(AbstractBaseModel):
+    """CLI 执行器 — 系统中可用的编程工具定义"""
 
-    agent = models.ForeignKey(
-        ElAgent, on_delete=models.CASCADE, related_name='executor_configs',
-        verbose_name='关联 Agent'
-    )
-    executor_code = models.CharField(max_length=50, verbose_name='执行器编码')
-    enabled = models.BooleanField(default=True, verbose_name='是否启用')
+    code = models.CharField(max_length=50, unique=True, db_index=True, verbose_name='执行器编码')
+    name = models.CharField(max_length=100, verbose_name='显示名称')
+    enabled = models.BooleanField(default=True, db_index=True, verbose_name='是否启用')
     timeout = models.IntegerField(default=3600, verbose_name='超时时间（秒）')
-    cli_path = models.CharField(
-        max_length=500, blank=True, default='',
-        help_text='沙箱内 CLI 绝对路径（若不在 PATH 中）',
-        verbose_name='CLI 路径'
-    )
+    metadata = models.JSONField(default=dict, blank=True, verbose_name='扩展配置')
 
     class Meta:
-        db_table = 'el_executor_config'
-        unique_together = [('agent', 'executor_code')]
+        db_table = 'el_agent_executor'
         ordering = ['created_at']
-        verbose_name = 'CLI 执行器配置'
+        verbose_name = 'CLI 执行器'
         verbose_name_plural = verbose_name
 
-    def __str__(self):
-        return f'{self.agent.code} -> {self.executor_code}'
+    def __str__(self) -> str:
+        return f'{self.name} ({self.code})'

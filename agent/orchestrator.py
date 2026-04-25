@@ -82,18 +82,18 @@ class Orchestrator:
 
         # 构建 tools 列表
         tools = []
-        for exec_cfg in agent_config.executor_configs.filter(enabled=True):
+        executor = agent_config.executor
+        if executor and executor.enabled:
             try:
-                exec_timeout = exec_cfg.timeout
                 tool = create_cli_tool(
-                    executor_code=exec_cfg.executor_code,
+                    executor_code=executor.code,
                     backend=backend,
-                    timeout=exec_timeout,
+                    timeout=executor.timeout,
                 )
                 tools.append(tool)
             except KeyError:
                 logger.warning(
-                    "CLI 执行器未注册: %s，跳过", exec_cfg.executor_code
+                    "CLI 执行器未注册: %s，跳过", executor.code
                 )
 
         agent = create_deep_agent(

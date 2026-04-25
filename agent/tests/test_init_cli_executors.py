@@ -1,19 +1,21 @@
-"""init_cli_executors 管理命令测试"""
+"""init_cli_executors 管理命令测试 — 写 DB 模式"""
 import unittest
 from django.core.management import call_command
-from sandbox.executors.base import ExecutorRegistry
+from agent.models import ElExecutor
 
 
 class TestInitCLIExecutors(unittest.TestCase):
     def setUp(self):
-        self._prev = ExecutorRegistry._registry.copy()
-        ExecutorRegistry._registry = {}
+        # 清理已有数据
+        ElExecutor.objects.all().delete()
 
-    def tearDown(self):
-        ExecutorRegistry._registry = self._prev
-
-    def test_register_trae_executor(self):
+    def test_inserts_trae_executor(self):
         call_command('init_cli_executors')
-        executor = ExecutorRegistry.get('trae')
-        self.assertEqual(executor.code, 'trae')
-        self.assertEqual(executor.name, 'Trae CLI')
+        ex = ElExecutor.objects.get(code='trae')
+        self.assertEqual(ex.name, 'Trae CLI')
+        self.assertEqual(ex.timeout, 3600)
+
+    def test_idempotent(self):
+        call_command('init_cli_executors')
+        call_command('init_cli_executors')
+        self.assertEqual(ElExecutor.objects.filter(code='trae').count(), 1)
