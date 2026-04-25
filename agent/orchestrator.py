@@ -20,6 +20,7 @@ from agent.context import GitContext
 from agent.middleware import GitSandboxMiddleware
 from agent.models import ElAgent, ElAgentExecutionLog
 from agent.services.sandbox_resolver import resolve_backend
+from agent.tools.cli_tool import create_cli_tool
 from task.middleware.task_memory import TaskMemoryMiddleware
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,22 @@ class Orchestrator:
         if task_id:
             middleware_list.insert(0, TaskMemoryMiddleware(task_id=task_id))
 
+        # 构建 tools 列表
+        tools = []
+        for exec_cfg in agent_config.executor_configs.filter(enabled=True):
+            try:
+                exec_timeout = exec_cfg.timeout
+                tool = create_cli_tool(
+                    executor_code=exec_cfg.executor_code,
+                    backend=backend,
+                    timeout=exec_timeout,
+                )
+                tools.append(tool)
+            except KeyError:
+                logger.warning(
+                    "CLI 执行器未注册: %s，跳过", exec_cfg.executor_code
+                )
+
         agent = create_deep_agent(
             model=llm,
             system_prompt=system_prompt,
@@ -86,6 +103,7 @@ class Orchestrator:
             backend=backend,
             context_schema=GitContext,
             middleware=middleware_list,
+            tools=tools,
         )
 
         logger.info(
