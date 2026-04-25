@@ -1,118 +1,159 @@
 <template>
-  <div class="llm-management p-4">
-    <!-- 顶部操作栏 -->
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-semibold">大模型配置</h2>
+  <div class="llm-management">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="page-header-left">
+        <h1>大模型配置</h1>
+        <p>管理 LLM 供应商和模型配置</p>
+      </div>
     </div>
 
     <!-- 选项卡 -->
-    <el-tabs v-model="activeTab">
-      <!-- 供应商管理 -->
-      <el-tab-pane label="供应商管理" name="providers">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-3">
-            <el-input
-              v-model="providerSearch"
-              placeholder="搜索名称或编码"
-              clearable
-              style="width: 200px"
-              @clear="loadProviders"
-              @keyup.enter="loadProviders"
-            />
-            <el-select v-model="providerFilterEnabled" placeholder="状态" clearable style="width: 100px" @change="loadProviders">
-              <el-option label="启用" :value="true" />
-              <el-option label="停用" :value="false" />
-            </el-select>
+    <div class="tab-container">
+      <el-tabs v-model="activeTab" class="glass-tabs">
+        <!-- 供应商管理 -->
+        <el-tab-pane label="供应商管理" name="providers">
+          <div class="tab-content">
+            <div class="filter-bar">
+              <div class="search-input">
+                <el-icon><Search /></el-icon>
+                <el-input v-model="providerSearch" placeholder="搜索名称或编码..." clearable @clear="loadProviders" @keyup.enter="loadProviders" />
+              </div>
+              <el-select v-model="providerFilterEnabled" placeholder="状态" clearable class="filter-select" @change="loadProviders">
+                <el-option label="启用" :value="true" />
+                <el-option label="停用" :value="false" />
+              </el-select>
+              <el-button type="primary" class="btn-action" @click="handleCreateProvider">
+                <el-icon><Plus /></el-icon>
+                添加供应商
+              </el-button>
+            </div>
+
+            <div class="table-container">
+              <el-table :data="providerTableData" v-loading="providerLoading" :show-header="true">
+                <el-table-column prop="code" label="编码" width="140" />
+                <el-table-column prop="name" label="名称" width="160" />
+                <el-table-column prop="resolved_base_url" label="API 地址" min-width="250" show-overflow-tooltip />
+                <el-table-column label="状态" width="100">
+                  <template #default="{ row }">
+                    <span class="status-badge" :class="row.enabled ? 'status-active' : 'status-inactive'">
+                      <span class="dot"></span>
+                      {{ row.enabled ? '启用' : '停用' }}
+                    </span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip />
+                <el-table-column label="操作" width="120" fixed="right">
+                  <template #default="{ row }">
+                    <div class="action-group">
+                      <button class="action-btn edit" title="编辑" @click="handleEditProvider(row)">
+                        <el-icon><Edit /></el-icon>
+                      </button>
+                      <button class="action-btn delete" title="删除" @click="handleDeleteProvider(row)">
+                        <el-icon><Delete /></el-icon>
+                      </button>
+                    </div>
+                  </template>
+                </el-table-column>
+              </el-table>
+
+              <div class="pagination-bar">
+                <span class="pagination-info">共 {{ providerTotal }} 条记录，第 {{ providerPage }} / {{ Math.ceil(providerTotal / providerPageSize) }} 页</span>
+                <el-pagination
+                  v-model:current-page="providerPage"
+                  v-model:page-size="providerPageSize"
+                  :total="providerTotal"
+                  :page-sizes="[10, 20]"
+                  layout="prev, pager, next"
+                  small
+                  @current-change="loadProviders"
+                  @size-change="loadProviders"
+                />
+              </div>
+            </div>
           </div>
-          <el-button type="primary" @click="handleCreateProvider">添加供应商</el-button>
-        </div>
+        </el-tab-pane>
 
-        <el-table :data="providerTableData" v-loading="providerLoading" stripe border>
-          <el-table-column prop="code" label="编码" width="140" />
-          <el-table-column prop="name" label="名称" width="160" />
-          <el-table-column prop="resolved_base_url" label="API 地址" min-width="250" show-overflow-tooltip />
-          <el-table-column label="状态" width="80">
-            <template #default="{ row }">
-              <el-tag :type="row.enabled ? 'success' : 'info'" size="small">{{ row.enabled ? '启用' : '停用' }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip />
-          <el-table-column label="操作" width="150" fixed="right">
-            <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="handleEditProvider(row)">编辑</el-button>
-              <el-button link type="danger" size="small" @click="handleDeleteProvider(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <!-- 模型管理 -->
+        <el-tab-pane label="模型管理" name="models">
+          <div class="tab-content">
+            <div class="filter-bar">
+              <div class="search-input">
+                <el-icon><Search /></el-icon>
+                <el-input v-model="modelSearch" placeholder="搜索模型名称或编码..." clearable @clear="loadModels" @keyup.enter="loadModels" />
+              </div>
+              <el-select v-model="modelFilterProvider" placeholder="供应商" clearable class="filter-select" @change="loadModels">
+                <el-option v-for="p in providerOptions" :key="p.id" :label="p.name" :value="p.id" />
+              </el-select>
+              <el-button type="primary" class="btn-action" @click="handleCreateModel">
+                <el-icon><Plus /></el-icon>
+                添加模型
+              </el-button>
+            </div>
 
-        <div class="flex justify-end mt-4">
-          <el-pagination
-            v-model:current-page="providerPage"
-            v-model:page-size="providerPageSize"
-            :total="providerTotal"
-            :page-sizes="[10, 20]"
-            layout="total, sizes, prev, pager, next"
-            @current-change="loadProviders"
-            @size-change="loadProviders"
-          />
-        </div>
-      </el-tab-pane>
+            <div class="table-container">
+              <el-table :data="modelTableData" v-loading="modelLoading" :show-header="true">
+                <el-table-column prop="provider_name" label="供应商" width="130" />
+                <el-table-column prop="model_code" label="模型编码" width="180" />
+                <el-table-column prop="display_name" label="显示名称" width="180" />
+                <el-table-column prop="context_window" label="上下文窗口" width="130">
+                  <template #default="{ row }">
+                    <span class="mono-num">{{ row.context_window }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="max_output_tokens" label="最大输出" width="120">
+                  <template #default="{ row }">
+                    <span class="mono-num">{{ row.max_output_tokens }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="状态" width="100">
+                  <template #default="{ row }">
+                    <span class="status-badge" :class="row.enabled ? 'status-active' : 'status-inactive'">
+                      <span class="dot"></span>
+                      {{ row.enabled ? '可用' : '停用' }}
+                    </span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="sort_order" label="排序" width="80">
+                  <template #default="{ row }">
+                    <span class="mono-num">{{ row.sort_order }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="120" fixed="right">
+                  <template #default="{ row }">
+                    <div class="action-group">
+                      <button class="action-btn edit" title="编辑" @click="handleEditModel(row)">
+                        <el-icon><Edit /></el-icon>
+                      </button>
+                      <button class="action-btn delete" title="删除" @click="handleDeleteModel(row)">
+                        <el-icon><Delete /></el-icon>
+                      </button>
+                    </div>
+                  </template>
+                </el-table-column>
+              </el-table>
 
-      <!-- 模型管理 -->
-      <el-tab-pane label="模型管理" name="models">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-3">
-            <el-input
-              v-model="modelSearch"
-              placeholder="搜索模型名称或编码"
-              clearable
-              style="width: 200px"
-              @clear="loadModels"
-              @keyup.enter="loadModels"
-            />
-            <el-select v-model="modelFilterProvider" placeholder="供应商" clearable style="width: 140px" @change="loadModels">
-              <el-option v-for="p in providerOptions" :key="p.id" :label="p.name" :value="p.id" />
-            </el-select>
+              <div class="pagination-bar">
+                <span class="pagination-info">共 {{ modelTotal }} 条记录，第 {{ modelPage }} / {{ Math.ceil(modelTotal / modelPageSize) }} 页</span>
+                <el-pagination
+                  v-model:current-page="modelPage"
+                  v-model:page-size="modelPageSize"
+                  :total="modelTotal"
+                  :page-sizes="[10, 20, 50]"
+                  layout="prev, pager, next"
+                  small
+                  @current-change="loadModels"
+                  @size-change="loadModels"
+                />
+              </div>
+            </div>
           </div>
-          <el-button type="primary" @click="handleCreateModel">添加模型</el-button>
-        </div>
-
-        <el-table :data="modelTableData" v-loading="modelLoading" stripe border>
-          <el-table-column prop="provider_name" label="供应商" width="130" />
-          <el-table-column prop="model_code" label="模型编码" width="180" />
-          <el-table-column prop="display_name" label="显示名称" width="180" />
-          <el-table-column prop="context_window" label="上下文窗口" width="130" />
-          <el-table-column prop="max_output_tokens" label="最大输出" width="120" />
-          <el-table-column label="状态" width="80">
-            <template #default="{ row }">
-              <el-tag :type="row.enabled ? 'success' : 'info'" size="small">{{ row.enabled ? '可用' : '停用' }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="sort_order" label="排序" width="80" />
-          <el-table-column label="操作" width="150" fixed="right">
-            <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="handleEditModel(row)">编辑</el-button>
-              <el-button link type="danger" size="small" @click="handleDeleteModel(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <div class="flex justify-end mt-4">
-          <el-pagination
-            v-model:current-page="modelPage"
-            v-model:page-size="modelPageSize"
-            :total="modelTotal"
-            :page-sizes="[10, 20, 50]"
-            layout="total, sizes, prev, pager, next"
-            @current-change="loadModels"
-            @size-change="loadModels"
-          />
-        </div>
-      </el-tab-pane>
-    </el-tabs>
+        </el-tab-pane>
+      </el-tabs>
+    </div>
 
     <!-- 供应商表单对话框 -->
-    <el-dialog v-model="providerFormVisible" :title="providerFormTitle" width="500px" @closed="resetProviderForm">
+    <el-dialog v-model="providerFormVisible" :title="providerFormTitle" width="500px" class="modern-dialog" @closed="resetProviderForm">
       <el-form :model="providerForm" label-width="100px">
         <el-form-item label="编码" required>
           <el-input v-model="providerForm.code" :disabled="!!editingProviderId" placeholder="如 openai, anthropic" />
@@ -140,8 +181,8 @@
     </el-dialog>
 
     <!-- 模型表单对话框 -->
-    <el-dialog v-model="modelFormVisible" :title="modelFormTitle" width="500px" @closed="resetModelForm">
-      <el-form :model="modelForm" label-width="120px">
+    <el-dialog v-model="modelFormVisible" :title="modelFormTitle" width="500px" class="modern-dialog" @closed="resetModelForm">
+      <el-form :model="modelForm" label-width="140px">
         <el-form-item label="供应商" required>
           <el-select v-model="modelForm.provider" style="width: 100%">
             <el-option v-for="p in providerOptions" :key="p.id" :label="p.name" :value="p.id" />
@@ -180,6 +221,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Search, Edit, Delete } from '@element-plus/icons-vue'
 import {
   getLLMProviderListApi,
   createLLMProviderApi,
@@ -415,3 +457,244 @@ onMounted(() => {
   loadProviderOptions()
 })
 </script>
+
+<style scoped lang="scss">
+.llm-management {
+  max-width: 1400px;
+  position: relative;
+  z-index: 1;
+}
+
+/* 页面头部 */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.page-header-left h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.page-header-left p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* 选项卡容器 */
+.tab-container {
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+:deep(.glass-tabs) {
+  .el-tabs__header {
+    margin: 0;
+    padding: 0 24px;
+    background: rgba(248, 250, 252, 0.6);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .el-tabs__nav-wrap::after {
+    display: none;
+  }
+
+  .el-tabs__item {
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: color 220ms ease;
+
+    &.is-active {
+      color: var(--primary);
+    }
+
+    &:hover {
+      color: var(--primary);
+    }
+  }
+
+  .el-tabs__active-bar {
+    background: var(--primary);
+    height: 2px;
+  }
+
+  .el-tabs__content {
+    padding: 0;
+  }
+}
+
+.tab-content {
+  padding: 20px;
+}
+
+/* 筛选栏 */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.search-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 8px 14px;
+  width: 240px;
+  transition: all 220ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+  }
+
+  :deep(.el-input__wrapper) {
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+}
+
+.filter-select {
+  width: 140px;
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* 表格容器 */
+.table-container {
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+:deep(.el-table) {
+  background: transparent;
+
+  th.el-table__cell {
+    background: rgba(248, 250, 252, 0.8);
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border-light) !important;
+  }
+
+  td.el-table__cell {
+    border-bottom: 1px solid var(--border-light) !important;
+    padding: 16px;
+  }
+
+  .el-table__row {
+    transition: background 220ms ease;
+    &:hover { background: rgba(248, 250, 252, 0.6); }
+  }
+}
+
+/* 状态标签 */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+}
+
+.status-active {
+  background: #ecfdf5;
+  color: #059669;
+  .dot { background: #10b981; }
+}
+
+.status-inactive {
+  background: #f1f5f9;
+  color: #94a3b8;
+  .dot { background: #94a3b8; }
+}
+
+/* 数字 */
+.mono-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+/* 操作按钮 */
+.action-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 220ms ease;
+  color: var(--text-tertiary);
+
+  &.edit:hover { color: #f59e0b; background: #fffbeb; }
+  &.delete:hover { color: #ef4444; background: #fef2f2; }
+}
+
+/* 分页 */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-light);
+}
+
+.pagination-info {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* 对话框 */
+:deep(.modern-dialog) {
+  .el-dialog__header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .el-dialog__body { padding: 24px; }
+  .el-dialog__footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-light);
+    background: #f8fafc;
+  }
+}
+</style>
