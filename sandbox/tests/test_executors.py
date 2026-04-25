@@ -2,6 +2,18 @@
 import unittest
 
 from sandbox.executors import execute_local, ExecResult, SSHConfig
+from sandbox.executors.base import CLIExecutor, ExecutorRegistry, ExecutorResult
+
+
+class MockExecutor(CLIExecutor):
+    code = "mock"
+    name = "Mock CLI"
+
+    def build_command(self, query, session_id=None, **kwargs):
+        return ["mock", "--query", query]
+
+    def parse_output(self, raw_output):
+        return ExecutorResult(success=True, session_id=None, output=raw_output)
 
 
 class TestSubprocessExecutor(unittest.TestCase):
@@ -28,3 +40,28 @@ class TestSSHConfig(unittest.TestCase):
         self.assertEqual(config.user, "")
         self.assertEqual(config.key_path, "")
         self.assertEqual(config.password, "")
+
+
+class TestExecutorRegistry(unittest.TestCase):
+    def setUp(self):
+        self._prev = ExecutorRegistry._registry.copy()
+        ExecutorRegistry._registry = {}
+
+    def tearDown(self):
+        ExecutorRegistry._registry = self._prev
+
+    def test_register_and_get(self):
+        ExecutorRegistry.register(MockExecutor())
+        executor = ExecutorRegistry.get("mock")
+        self.assertEqual(executor.code, "mock")
+        self.assertEqual(executor.name, "Mock CLI")
+
+    def test_get_unknown_raises(self):
+        with self.assertRaises(KeyError):
+            ExecutorRegistry.get("unknown")
+
+    def test_list_all(self):
+        ExecutorRegistry.register(MockExecutor())
+        all_executors = ExecutorRegistry.list_all()
+        self.assertEqual(len(all_executors), 1)
+        self.assertIsInstance(all_executors[0], MockExecutor)
