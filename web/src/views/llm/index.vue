@@ -65,7 +65,7 @@
                   :total="providerTotal"
                   :page-sizes="[10, 20]"
                   layout="prev, pager, next"
-                  small
+                  size="small"
                   @current-change="loadProviders"
                   @size-change="loadProviders"
                 />
@@ -141,7 +141,7 @@
                   :total="modelTotal"
                   :page-sizes="[10, 20, 50]"
                   layout="prev, pager, next"
-                  small
+                  size="small"
                   @current-change="loadModels"
                   @size-change="loadModels"
                 />

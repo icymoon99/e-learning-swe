@@ -88,6 +88,10 @@ export function put<T = unknown>(url: string, data?: unknown, config?: AxiosRequ
   return request.put<ApiResponse<T>>(url, data, config)
 }
 
+export function patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) {
+  return request.patch<ApiResponse<T>>(url, data, config)
+}
+
 export function del<T = unknown>(url: string, config?: AxiosRequestConfig) {
   return request.delete<ApiResponse<T>>(url, config)
 }

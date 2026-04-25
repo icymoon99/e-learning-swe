@@ -64,7 +64,7 @@
           :total="totalCount"
           :page-sizes="[10, 20, 50]"
           layout="prev, pager, next"
-          small
+          size="small"
           @current-change="loadData"
           @size-change="onPageSizeChange"
         />
