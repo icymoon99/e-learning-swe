@@ -30,11 +30,11 @@
             </div>
 
             <div class="table-container">
-              <el-table :data="providerTableData" v-loading="providerLoading" :show-header="true">
-                <el-table-column prop="code" label="编码" width="140" />
-                <el-table-column prop="name" label="名称" width="160" />
-                <el-table-column prop="resolved_base_url" label="API 地址" min-width="250" show-overflow-tooltip />
-                <el-table-column label="状态" width="100">
+              <el-table :data="providerTableData" v-loading="providerLoading" :show-header="true" :header-cell-style="{ textAlign: 'center' }">
+                <el-table-column prop="name" label="名称" width="180" show-overflow-tooltip header-align="center" />
+                <el-table-column prop="code" label="编码" width="150" show-overflow-tooltip header-align="center" />
+                <el-table-column prop="resolved_base_url" label="API 地址" width="250" show-overflow-tooltip header-align="center" />
+                <el-table-column label="状态" width="150" align="center" header-align="center">
                   <template #default="{ row }">
                     <span class="status-badge" :class="row.enabled ? 'status-active' : 'status-inactive'">
                       <span class="dot"></span>
@@ -42,8 +42,8 @@
                     </span>
                   </template>
                 </el-table-column>
-                <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip />
-                <el-table-column label="操作" width="120" fixed="right">
+                <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip header-align="center" />
+                <el-table-column label="操作" width="120" fixed="right" align="center" header-align="center">
                   <template #default="{ row }">
                     <div class="action-group">
                       <button class="action-btn edit" title="编辑" @click="handleEditProvider(row)">
