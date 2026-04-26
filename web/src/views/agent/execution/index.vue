@@ -342,7 +342,7 @@ onMounted(() => { loadData() })
 
 .status-inactive {
   background: #f1f5f9;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   .dot { background: #94a3b8; }
 }
 
@@ -363,12 +363,10 @@ onMounted(() => { loadData() })
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  color: #94a3b8;
+  transition: all 220ms ease;
+  color: var(--text-tertiary);
 
   &.view:hover { color: #3b82f6; background: #eff6ff; }
-  &.edit:hover { color: #f59e0b; background: #fffbeb; }
-  &.delete:hover { color: #ef4444; background: #fef2f2; }
 }
 
 /* ====== 分页 ====== */
@@ -390,7 +388,7 @@ onMounted(() => { loadData() })
   .el-drawer__header {
     margin-bottom: 0;
     padding: 20px 24px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-light);
   }
 }
 
@@ -408,7 +406,7 @@ onMounted(() => { loadData() })
     font-size: 18px;
     font-weight: 700;
     letter-spacing: -0.01em;
-    color: #0f172a;
+    color: var(--text-primary);
   }
 }
 
@@ -437,14 +435,14 @@ onMounted(() => { loadData() })
 .detail-label {
   font-size: 11px;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .detail-value {
   font-size: 14px;
-  color: #0f172a;
+  color: var(--text-primary);
   word-break: break-all;
 
   &.mono {
@@ -459,8 +457,8 @@ onMounted(() => { loadData() })
 }
 
 .json-block {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: rgba(248, 250, 252, 0.6);
+  border: 1px solid var(--border-light);
   border-radius: 8px;
   padding: 12px;
   font-size: 12px;
@@ -481,5 +479,17 @@ onMounted(() => { loadData() })
 .json-block::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 2px;
+}
+
+/* ====== 动画 ====== */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
