@@ -46,14 +46,14 @@
 
     <!-- 表格 -->
     <div class="table-container">
-      <el-table :data="tableData" v-loading="loading" :show-header="true">
-        <el-table-column label="任务" min-width="280">
+      <el-table :data="tableData" v-loading="loading" :show-header="true" :header-cell-style="{ textAlign: 'center' }">
+        <el-table-column label="任务" min-width="150" show-overflow-tooltip header-align="center">
           <template #default="{ row }">
             <div class="task-title">{{ row.title }}</div>
             <div class="task-desc">{{ row.description || '-' }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="仓库源" width="160">
+        <el-table-column label="仓库源" width="200" show-overflow-tooltip header-align="center">
           <template #default="{ row }">
             <span class="repo-tag">
               <el-icon><Connection /></el-icon>
@@ -61,7 +61,7 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column label="状态" width="150" align="center" header-align="center">
           <template #default="{ row }">
             <span class="status-badge" :class="row.status === 'open' ? 'status-open' : 'status-closed'">
               <span class="dot"></span>
@@ -69,7 +69,7 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="执行状态" width="120">
+        <el-table-column label="执行状态" width="120" align="center" header-align="center">
           <template #default="{ row }">
             <span v-if="row.latest_execution_status" class="exec-badge" :class="'exec-' + row.latest_execution_status">
               {{ row.latest_execution_status }}
@@ -77,17 +77,17 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="源分支" width="140">
+        <el-table-column label="源分支" width="200" show-overflow-tooltip header-align="center">
           <template #default="{ row }">
             <span class="branch-tag">{{ row.source_branch }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="更新时间" width="160">
+        <el-table-column label="更新时间" width="250" align="center" header-align="center">
           <template #default="{ row }">
             <span class="time-text">{{ row.updated_at }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right" align="center" header-align="center">
           <template #default="{ row }">
             <div class="action-group">
               <button class="action-btn view" title="查看" @click="handleViewDetail(row)">

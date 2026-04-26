@@ -29,7 +29,7 @@
     <div class="table-container">
       <el-table :data="tableData" v-loading="loading" :show-header="true">
         <el-table-column prop="name" label="名称" min-width="150" show-overflow-tooltip />
-        <el-table-column label="平台" width="100">
+        <el-table-column label="平台" width="120">
           <template #default="{ row }">
             <span class="status-badge" :class="'platform-' + row.platform">
               <span class="dot"></span>
@@ -37,10 +37,10 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="repo_url" label="仓库地址" min-width="250" show-overflow-tooltip />
-        <el-table-column prop="default_branch" label="默认分支" width="120" />
-        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="created_at" label="创建时间" width="180" />
+        <el-table-column prop="repo_url" label="仓库地址" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="default_branch" label="默认分支" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="created_at" label="创建时间" width="250" />
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
