@@ -27,11 +27,11 @@
 
     <!-- 表格 -->
     <div class="table-container">
-      <el-table :data="tableData" v-loading="loading" :show-header="true">
-        <el-table-column prop="code" label="编码" width="150" />
-        <el-table-column prop="name" label="名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="llm_model_display" label="LLM 模型" width="220" show-overflow-tooltip />
-        <el-table-column label="状态" width="100">
+      <el-table :data="tableData" v-loading="loading" :show-header="true" :header-cell-style="{ textAlign: 'center' }">
+        <el-table-column prop="code" label="编码" width="150" header-align="center" />
+        <el-table-column prop="name" label="名称" min-width="200" show-overflow-tooltip header-align="center" />
+        <el-table-column prop="llm_model_display" label="LLM 模型" width="150" show-overflow-tooltip header-align="center" />
+        <el-table-column label="状态" width="150" align="center" header-align="center">
           <template #default="{ row }">
             <span class="status-badge" :class="getStatusClass(row.status)">
               <span class="dot"></span>
@@ -39,9 +39,9 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="created_at" label="创建时间" width="180" />
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip header-align="center" />
+        <el-table-column prop="created_at" label="创建时间" width="250" align="center" header-align="center" />
+        <el-table-column label="操作" width="120" fixed="right" align="center" header-align="center">
           <template #default="{ row }">
             <div class="action-group">
               <button class="action-btn edit" title="编辑" @click="handleEdit(row)">
