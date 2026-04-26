@@ -36,9 +36,9 @@
 
     <!-- 表格 -->
     <div class="table-container">
-      <el-table :data="tableData" v-loading="loading" :show-header="true">
-        <el-table-column prop="name" label="名称" min-width="150" show-overflow-tooltip />
-        <el-table-column label="类型" width="120">
+      <el-table :data="tableData" v-loading="loading" :show-header="true" :header-cell-style="{ textAlign: 'center' }">
+        <el-table-column prop="name" label="名称" min-width="150" show-overflow-tooltip header-align="center" />
+        <el-table-column label="类型" width="200" align="center" header-align="center">
           <template #default="{ row }">
             <span class="type-badge">
               <el-icon><Monitor /></el-icon>
@@ -46,7 +46,7 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column label="状态" width="200" align="center" header-align="center">
           <template #default="{ row }">
             <span class="status-badge" :class="getStatusClass(row.status)">
               <span class="dot"></span>
@@ -54,8 +54,8 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" width="180" />
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column prop="created_at" label="创建时间" width="250" align="center" header-align="center" />
+        <el-table-column label="操作" width="300" fixed="right" align="center" header-align="center">
           <template #default="{ row }">
             <div class="action-group">
               <button class="action-btn view" title="详情" @click="handleDetail(row)">
