@@ -92,21 +92,21 @@
             </div>
 
             <div class="table-container">
-              <el-table :data="modelTableData" v-loading="modelLoading" :show-header="true">
-                <el-table-column prop="provider_name" label="供应商" width="130" />
-                <el-table-column prop="model_code" label="模型编码" width="180" />
-                <el-table-column prop="display_name" label="显示名称" width="180" />
-                <el-table-column prop="context_window" label="上下文窗口" width="130">
+              <el-table :data="modelTableData" v-loading="modelLoading" :show-header="true" :header-cell-style="{ textAlign: 'center' }">
+                <el-table-column prop="provider_name" label="供应商" min-width="150" show-overflow-tooltip header-align="center" />
+                <el-table-column prop="model_code" label="模型编码" min-width="200" show-overflow-tooltip header-align="center" />
+                <el-table-column prop="display_name" label="显示名称" min-width="200" show-overflow-tooltip header-align="center" />
+                <el-table-column prop="context_window" label="上下文窗口" width="150" align="center" header-align="center">
                   <template #default="{ row }">
                     <span class="mono-num">{{ row.context_window }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column prop="max_output_tokens" label="最大输出" width="120">
+                <el-table-column prop="max_output_tokens" label="最大输出" width="150" align="center" header-align="center">
                   <template #default="{ row }">
                     <span class="mono-num">{{ row.max_output_tokens }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="状态" width="100">
+                <el-table-column label="状态" width="150" align="center" header-align="center">
                   <template #default="{ row }">
                     <span class="status-badge" :class="row.enabled ? 'status-active' : 'status-inactive'">
                       <span class="dot"></span>
@@ -114,12 +114,12 @@
                     </span>
                   </template>
                 </el-table-column>
-                <el-table-column prop="sort_order" label="排序" width="80">
+                <el-table-column prop="sort_order" label="排序" width="100" align="center" header-align="center">
                   <template #default="{ row }">
                     <span class="mono-num">{{ row.sort_order }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" width="120" fixed="right">
+                <el-table-column label="操作" width="150" fixed="right" align="center" header-align="center">
                   <template #default="{ row }">
                     <div class="action-group">
                       <button class="action-btn edit" title="编辑" @click="handleEditModel(row)">
