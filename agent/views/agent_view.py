@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from core.common.exception.api_response import ApiResponse
 
 from agent.filters import ElAgentFilter, ElAgentExecutionLogFilter
-from agent.models import ElAgent, ElAgentExecutionLog, ElExecutor
+from agent.models import ElAgent, ElAgentExecutionLog
 from agent.serializers import AgentSerializer, AgentExecutionLogSerializer
 
 
@@ -40,22 +40,6 @@ class AgentViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self.perform_destroy(instance)
         return ApiResponse.ok(message="删除成功", http_status=status.HTTP_200_OK)
-
-
-class ElExecutorViewSet(viewsets.ReadOnlyModelViewSet):
-    """CLI 执行器列表（下拉选择）"""
-
-    permission_classes = [IsAuthenticated]
-    queryset = ElExecutor.objects.filter(enabled=True).order_by("name")
-    serializer_class = AgentSerializer
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        data = [
-            {"id": e.id, "code": e.code, "name": e.name}
-            for e in queryset
-        ]
-        return ApiResponse.ok(content=data)
 
 
 class AgentExecutionLogViewSet(viewsets.ReadOnlyModelViewSet):
