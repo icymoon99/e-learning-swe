@@ -1,3 +1,3 @@
-from .agent_view import AgentViewSet, AgentExecutionLogViewSet
+from .agent_view import AgentViewSet, AgentExecutionLogViewSet, ElExecutorViewSet
 
-__all__ = ["AgentViewSet", "AgentExecutionLogViewSet"]
+__all__ = ["AgentViewSet", "AgentExecutionLogViewSet", "ElExecutorViewSet"]

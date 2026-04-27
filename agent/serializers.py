@@ -7,17 +7,22 @@ class AgentSerializer(serializers.ModelSerializer):
 
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     llm_model_display = serializers.SerializerMethodField(read_only=True)
+    executor_display = serializers.SerializerMethodField(read_only=True)
 
     def get_llm_model_display(self, obj):
         if obj.llm_model:
             return f"{obj.llm_model.provider.name} · {obj.llm_model.display_name}"
         return ""
 
+    def get_executor_display(self, obj):
+        return obj.executor.name if obj.executor else ""
+
     class Meta:
         model = ElAgent
         fields = [
             "id", "code", "name", "description", "system_prompt",
-            "llm_model", "llm_model_display", "status", "status_display", "metadata",
+            "llm_model", "llm_model_display", "executor", "executor_display",
+            "status", "status_display", "metadata",
             "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]

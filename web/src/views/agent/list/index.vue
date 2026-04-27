@@ -31,6 +31,7 @@
         <el-table-column prop="code" label="编码" width="150" header-align="center" />
         <el-table-column prop="name" label="名称" min-width="200" show-overflow-tooltip header-align="center" />
         <el-table-column prop="llm_model_display" label="LLM 模型" width="150" show-overflow-tooltip header-align="center" />
+        <el-table-column prop="executor_display" label="执行器" width="150" show-overflow-tooltip header-align="center" />
         <el-table-column label="状态" width="150" align="center" header-align="center">
           <template #default="{ row }">
             <span class="status-badge" :class="getStatusClass(row.status)">
@@ -96,6 +97,16 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="执行器">
+          <el-select v-model="form.executor" placeholder="选择执行器" clearable style="width: 100%" @focus="loadExecutors">
+            <el-option
+              v-for="e in executorOptions"
+              :key="e.id"
+              :label="e.name"
+              :value="e.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width: 100%">
             <el-option label="启用" value="active" />
@@ -120,9 +131,10 @@ import {
   createAgentApi,
   updateAgentApi,
   deleteAgentApi,
+  getExecutorListApi,
 } from '@/api/agent'
 import { getLLMModelDropdownApi } from '@/api/llm'
-import type { AgentInstance, AgentStatus } from '@/types/agent'
+import type { AgentInstance, AgentStatus, ExecutorOption } from '@/types/agent'
 import type { LLMModelDropdown } from '@/types/llm'
 
 // 状态
@@ -146,6 +158,7 @@ const form = ref({
   description: '',
   system_prompt: '',
   llm_model: null as string | null,
+  executor: null as string | null,
   status: 'active' as AgentStatus,
   metadata: {} as Record<string, unknown>,
 })
@@ -160,6 +173,19 @@ async function loadModelOptions() {
     const resp = await getLLMModelDropdownApi()
     llmModelOptions.value = resp.data.content || []
     llmDropdownLoaded.value = true
+  } catch { /* 忽略 */ }
+}
+
+// 执行器下拉
+const executorOptions = ref<ExecutorOption[]>([])
+const executorLoaded = ref(false)
+
+async function loadExecutors() {
+  if (executorLoaded.value) return
+  try {
+    const resp = await getExecutorListApi()
+    executorOptions.value = resp.data.content || []
+    executorLoaded.value = true
   } catch { /* 忽略 */ }
 }
 
@@ -188,7 +214,7 @@ function onPageSizeChange() { currentPage.value = 1; loadData() }
 function handleCreate() {
   editingId.value = null
   formTitle.value = '创建 Agent'
-  form.value = { code: '', name: '', description: '', system_prompt: '', llm_model: null, status: 'active', metadata: {} }
+  form.value = { code: '', name: '', description: '', system_prompt: '', llm_model: null, executor: null, status: 'active', metadata: {} }
   formVisible.value = true
 }
 
@@ -196,7 +222,7 @@ function handleCreate() {
 function handleEdit(row: AgentInstance) {
   editingId.value = row.id
   formTitle.value = '编辑 Agent'
-  form.value = { code: row.code, name: row.name, description: row.description, system_prompt: row.system_prompt, llm_model: row.llm_model, status: row.status, metadata: { ...row.metadata } }
+  form.value = { code: row.code, name: row.name, description: row.description, system_prompt: row.system_prompt, llm_model: row.llm_model, executor: row.executor, status: row.status, metadata: { ...row.metadata } }
   formVisible.value = true
 }
 
@@ -205,10 +231,10 @@ async function handleSave() {
   if (!form.value.code) { ElMessage.warning('编码为必填字段'); return }
   try {
     if (editingId.value) {
-      await updateAgentApi(editingId.value, { name: form.value.name, description: form.value.description, system_prompt: form.value.system_prompt, llm_model: form.value.llm_model, status: form.value.status, metadata: form.value.metadata })
+      await updateAgentApi(editingId.value, { name: form.value.name, description: form.value.description, system_prompt: form.value.system_prompt, llm_model: form.value.llm_model, executor: form.value.executor, status: form.value.status, metadata: form.value.metadata })
       ElMessage.success('更新成功')
     } else {
-      await createAgentApi({ code: form.value.code, name: form.value.name, description: form.value.description, system_prompt: form.value.system_prompt, llm_model: form.value.llm_model, status: form.value.status, metadata: form.value.metadata })
+      await createAgentApi({ code: form.value.code, name: form.value.name, description: form.value.description, system_prompt: form.value.system_prompt, llm_model: form.value.llm_model, executor: form.value.executor, status: form.value.status, metadata: form.value.metadata })
       ElMessage.success('创建成功')
     }
     formVisible.value = false
@@ -217,7 +243,7 @@ async function handleSave() {
 }
 
 function resetForm() {
-  form.value = { code: '', name: '', description: '', system_prompt: '', llm_model: null, status: 'active', metadata: {} }
+  form.value = { code: '', name: '', description: '', system_prompt: '', llm_model: null, executor: null, status: 'active', metadata: {} }
   editingId.value = null
 }
 

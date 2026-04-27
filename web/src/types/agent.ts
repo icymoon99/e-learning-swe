@@ -9,11 +9,19 @@ export interface AgentInstance {
   system_prompt: string
   llm_model: string | null
   llm_model_display: string
+  executor: string | null
+  executor_display: string
   status: AgentStatus
   status_display: string
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
+}
+
+export interface ExecutorOption {
+  id: string
+  code: string
+  name: string
 }
 
 export interface AgentExecutionLog {
@@ -55,6 +63,7 @@ export interface CreateAgentParams {
   description?: string
   system_prompt?: string
   llm_model?: string | null
+  executor?: string | null
   status?: AgentStatus
   metadata?: Record<string, unknown>
 }

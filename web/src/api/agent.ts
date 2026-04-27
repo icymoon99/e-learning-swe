@@ -6,10 +6,12 @@ import type {
   AgentListParams,
   ExecutionListParams,
   CreateAgentParams,
+  ExecutorOption,
 } from '@/types/agent'
 
 const AGENT_BASE = '/agent/agents/'
 const EXEC_BASE = '/agent/execution-logs/'
+const EXECUTOR_BASE = '/agent/executors/'
 
 // Agent CRUD
 export function getAgentListApi(params?: AgentListParams) {
@@ -45,4 +47,9 @@ export function getAgentExecutionsApi(agentId: string, params?: ExecutionListPar
   return get<PaginatedResponse<AgentExecutionLog>>(EXEC_BASE, {
     params: { ...params, agent: agentId },
   })
+}
+
+// Executors
+export function getExecutorListApi() {
+  return get<ExecutorOption[]>(EXECUTOR_BASE)
 }
