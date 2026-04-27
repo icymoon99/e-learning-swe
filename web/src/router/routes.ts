@@ -116,6 +116,12 @@ export const asyncRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/agent/execution/index.vue'),
         meta: { title: '执行日志', permission: 'agent:view' },
       },
+      {
+        path: 'executor',
+        name: 'AgentExecutor',
+        component: () => import('@/views/executor/index.vue'),
+        meta: { title: '执行器管理', permission: 'agent:view' },
+      },
     ],
   },
   {
