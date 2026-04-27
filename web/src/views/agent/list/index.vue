@@ -184,7 +184,7 @@ async function loadExecutors() {
   if (executorLoaded.value) return
   try {
     const resp = await getExecutorListApi()
-    executorOptions.value = resp.data.content || []
+    executorOptions.value = resp.data.content?.results?.map((e: { id: string; code: string; name: string }) => ({ id: e.id, code: e.code, name: e.name })) || []
     executorLoaded.value = true
   } catch { /* 忽略 */ }
 }

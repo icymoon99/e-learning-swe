@@ -50,6 +50,6 @@ export function getAgentExecutionsApi(agentId: string, params?: ExecutionListPar
 }
 
 // Executors
-export function getExecutorListApi() {
-  return get<ExecutorOption[]>(EXECUTOR_BASE)
+export function getExecutorListApi(params?: { page?: number; page_size?: number }) {
+  return get<PaginatedResponse<ExecutorOption>>(EXECUTOR_BASE, { params })
 }
