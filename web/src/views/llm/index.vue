@@ -165,7 +165,23 @@
           <el-input v-model="providerForm.base_url" placeholder="预置供应商可留空" />
         </el-form-item>
         <el-form-item label="API 密钥">
-          <el-input v-model="providerForm.api_key_encrypted" type="password" show-password placeholder="加密存储" />
+          <el-input
+            v-model="providerForm.api_key_encrypted"
+            :type="showApiKey ? 'text' : 'password'"
+            placeholder="输入 API 密钥"
+            clearable
+          >
+            <template #suffix>
+              <el-icon
+                class="toggle-key-visibility"
+                @click="showApiKey = !showApiKey"
+                style="cursor: pointer;"
+              >
+                <View v-if="showApiKey" />
+                <Hide v-else />
+              </el-icon>
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="providerForm.description" type="textarea" :rows="2" />
@@ -221,7 +237,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, Search, Edit, Delete, View, Hide } from '@element-plus/icons-vue'
 import {
   getLLMProviderListApi,
   createLLMProviderApi,
@@ -232,6 +248,7 @@ import {
   updateLLMModelApi,
   deleteLLMModelApi,
 } from '@/api/llm'
+import { encryptAES } from '@/utils/aes'
 import type { LLMProvider, LLMModel, CreateLLMProviderParams, CreateLLMModelParams } from '@/types/llm'
 
 const activeTab = ref('providers')
@@ -269,6 +286,8 @@ async function loadProviders() {
 const providerFormVisible = ref(false)
 const providerFormTitle = ref('添加供应商')
 const editingProviderId = ref<string | null>(null)
+const showApiKey = ref(false)
+const originalApiKey = ref('')
 const providerForm = ref<CreateLLMProviderParams>({
   code: '',
   name: '',
@@ -281,6 +300,8 @@ const providerForm = ref<CreateLLMProviderParams>({
 function handleCreateProvider() {
   editingProviderId.value = null
   providerFormTitle.value = '添加供应商'
+  showApiKey.value = false
+  originalApiKey.value = ''
   providerForm.value = { code: '', name: '', base_url: '', api_key_encrypted: '', enabled: true, description: '' }
   providerFormVisible.value = true
 }
@@ -288,6 +309,8 @@ function handleCreateProvider() {
 function handleEditProvider(row: LLMProvider) {
   editingProviderId.value = row.id
   providerFormTitle.value = '编辑供应商'
+  showApiKey.value = false
+  originalApiKey.value = ''
   providerForm.value = {
     code: row.code,
     name: row.name,
@@ -305,11 +328,22 @@ async function handleSaveProvider() {
     return
   }
   try {
+    const payload: CreateLLMProviderParams = {
+      code: providerForm.value.code,
+      name: providerForm.value.name,
+      base_url: providerForm.value.base_url,
+      enabled: providerForm.value.enabled,
+      description: providerForm.value.description,
+    }
+    // 仅当用户输入了 API 密钥时才加密发送
+    if (providerForm.value.api_key_encrypted) {
+      payload.api_key_encrypted = encryptAES(providerForm.value.api_key_encrypted)
+    }
     if (editingProviderId.value) {
-      await updateLLMProviderApi(editingProviderId.value, providerForm.value)
+      await updateLLMProviderApi(editingProviderId.value, payload)
       ElMessage.success('更新成功')
     } else {
-      await createLLMProviderApi(providerForm.value)
+      await createLLMProviderApi(payload)
       ElMessage.success('创建成功')
     }
     providerFormVisible.value = false
@@ -321,6 +355,8 @@ async function handleSaveProvider() {
 
 function resetProviderForm() {
   providerForm.value = { code: '', name: '', base_url: '', api_key_encrypted: '', enabled: true, description: '' }
+  showApiKey.value = false
+  originalApiKey.value = ''
   editingProviderId.value = null
 }
 
@@ -695,6 +731,15 @@ onMounted(() => {
     padding: 16px 24px;
     border-top: 1px solid var(--border-light);
     background: #f8fafc;
+  }
+}
+
+.toggle-key-visibility {
+  color: var(--text-tertiary);
+  transition: color 220ms ease;
+
+  &:hover {
+    color: var(--primary);
   }
 }
 </style>
