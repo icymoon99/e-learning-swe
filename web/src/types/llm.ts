@@ -10,6 +10,7 @@ export interface LLMProvider {
   description: string
   created_at: string
   updated_at: string
+  api_key_configured: boolean
 }
 
 export interface CreateLLMProviderParams {

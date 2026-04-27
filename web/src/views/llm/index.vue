@@ -315,7 +315,7 @@ function handleEditProvider(row: LLMProvider) {
     code: row.code,
     name: row.name,
     base_url: row.base_url,
-    api_key_encrypted: '',
+    api_key_encrypted: row.api_key_configured ? '****' : '',
     enabled: row.enabled,
     description: row.description,
   }
@@ -335,9 +335,14 @@ async function handleSaveProvider() {
       enabled: providerForm.value.enabled,
       description: providerForm.value.description,
     }
-    // 仅当用户输入了 API 密钥时才加密发送
-    if (providerForm.value.api_key_encrypted) {
-      payload.api_key_encrypted = encryptAES(providerForm.value.api_key_encrypted)
+    // 占位符表示保留已有密钥，不发送
+    // 空字符串表示用户清空了密钥，发送空值删除
+    // 其他值表示用户输入了新密钥，加密后发送
+    const keyVal = providerForm.value.api_key_encrypted
+    if (keyVal && keyVal !== '****') {
+      payload.api_key_encrypted = encryptAES(keyVal)
+    } else if (keyVal === '') {
+      payload.api_key_encrypted = ''
     }
     if (editingProviderId.value) {
       await updateLLMProviderApi(editingProviderId.value, payload)

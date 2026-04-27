@@ -7,14 +7,19 @@ class ElLLMProviderSerializer(serializers.ModelSerializer):
     """LLM 供应商序列化器（列表/详情）"""
 
     resolved_base_url = serializers.CharField(read_only=True)
+    api_key_configured = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ElLLMProvider
         fields = [
             "id", "code", "name", "base_url", "resolved_base_url",
             "enabled", "description", "created_at", "updated_at",
+            "api_key_configured",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "api_key_configured"]
+
+    def get_api_key_configured(self, obj):
+        return bool(obj.api_key_encrypted)
 
 
 class ElLLMProviderCreateSerializer(serializers.ModelSerializer):
