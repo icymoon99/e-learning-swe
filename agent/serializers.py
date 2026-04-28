@@ -9,6 +9,8 @@ class AgentSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     llm_model_display = serializers.SerializerMethodField(read_only=True)
     executor_display = serializers.SerializerMethodField(read_only=True)
+    sandbox_instance_name = serializers.SerializerMethodField(read_only=True)
+    sandbox_instance_status = serializers.SerializerMethodField(read_only=True)
 
     def get_llm_model_display(self, obj):
         if obj.llm_model:
@@ -18,11 +20,18 @@ class AgentSerializer(serializers.ModelSerializer):
     def get_executor_display(self, obj):
         return obj.executor.name if obj.executor else ""
 
+    def get_sandbox_instance_name(self, obj):
+        return obj.sandbox_instance.name if obj.sandbox_instance else ""
+
+    def get_sandbox_instance_status(self, obj):
+        return obj.sandbox_instance.get_status_display() if obj.sandbox_instance else ""
+
     class Meta:
         model = ElAgent
         fields = [
             "id", "code", "name", "description", "system_prompt",
             "llm_model", "llm_model_display", "executor", "executor_display",
+            "sandbox_instance", "sandbox_instance_name", "sandbox_instance_status",
             "status", "status_display", "metadata",
             "created_at", "updated_at",
         ]

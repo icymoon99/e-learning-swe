@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase, APIClient
 from agent.models import ElAgent, ElAgentExecutionLog
 from llm.models import ElLLMProvider, ElLLMModel
+from sandbox.models import ElSandboxInstance
 
 ElUser = get_user_model()
 
@@ -23,8 +24,27 @@ class TestAgentViewSet(APITestCase):
             model_code="claude-sonnet-4-6",
             display_name="Claude Sonnet 4.6",
         )
-        ElAgent.objects.create(code="agent_list_a", name="Agent A", llm_model=self.llm_model)
-        ElAgent.objects.create(code="agent_list_b", name="Agent B", llm_model=self.llm_model)
+        self.sandbox = ElSandboxInstance.objects.create(
+            name="Test Sandbox",
+            type="remotedocker",
+            status="active",
+            metadata={
+                "image": "test:latest",
+                "work_dir": "/workspace",
+                "ssh_host": "127.0.0.1",
+                "ssh_port": 22,
+                "ssh_user": "root",
+                "ssh_password": "test",
+            },
+        )
+        ElAgent.objects.create(
+            code="agent_list_a", name="Agent A", llm_model=self.llm_model,
+            sandbox_instance=self.sandbox,
+        )
+        ElAgent.objects.create(
+            code="agent_list_b", name="Agent B", llm_model=self.llm_model,
+            sandbox_instance=self.sandbox,
+        )
 
     def test_list_agents(self):
         """测试列表接口返回所有 Agent"""
@@ -74,6 +94,19 @@ class TestAgentViewSet(APITestCase):
         resp = self.client.delete(f"/api/agent/agents/{agent.id}/")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(ElAgent.objects.count(), count - 1)
+
+    def test_list_agents_include_sandbox_fields(self):
+        """测试列表接口返回沙箱名称和状态"""
+        resp = self.client.get("/api/agent/agents/")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        results = data["content"]["results"]
+        self.assertTrue(len(results) > 0)
+        for agent in results:
+            self.assertIn("sandbox_instance_name", agent)
+            self.assertIn("sandbox_instance_status", agent)
+            self.assertEqual(agent["sandbox_instance_name"], "Test Sandbox")
+            self.assertEqual(agent["sandbox_instance_status"], "活跃")
 
 
 class TestAgentExecutionLogViewSet(APITestCase):
