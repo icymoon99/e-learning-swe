@@ -5,7 +5,7 @@ import shlex
 
 from deepagents.backends.protocol import ExecuteResponse
 
-from sandbox.backends.base import BaseSandboxBackend
+from sandbox.backends.base import BaseSandboxBackend, _sanitize_env
 from sandbox.executors import SSHConfig, execute_remote
 
 logger = logging.getLogger(__name__)
@@ -29,14 +29,29 @@ class RemoteSystemBackend(BaseSandboxBackend):
     def _build_cmd(self, inner_cmd: str) -> str:
         return f"cd {shlex.quote(self._work_dir)} && {inner_cmd}"
 
-    def execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
-        result = execute_remote(command, self._ssh_config, timeout=timeout or 300)
+    def execute(
+        self, command: str, *, timeout: int | None = None, env: dict | None = None
+    ) -> ExecuteResponse:
+        full_cmd = self._build_cmd_with_env(command, env)
+        result = execute_remote(full_cmd, self._ssh_config, timeout=timeout or 300)
         output = result.stdout
         if result.stderr:
             output = output + result.stderr if output else result.stderr
         return ExecuteResponse(
             output=output, exit_code=result.exit_code, truncated=False
         )
+
+    def _build_cmd_with_env(self, inner_cmd: str, env: dict | None = None) -> str:
+        """构建 SSH 命令，使用 export 前缀传递环境变量。"""
+        safe_env = _sanitize_env(env) if env else {}
+
+        if safe_env:
+            export_vars = " ".join(
+                f"export {shlex.quote(key)}={shlex.quote(value)}"
+                for key, value in safe_env.items()
+            )
+            return f"{export_vars} && {inner_cmd}"
+        return inner_cmd
 
     def ensure_dir(self) -> None:
         """确保远程工作目录存在"""
