@@ -11,11 +11,23 @@ export interface AgentInstance {
   llm_model_display: string
   executor: string | null
   executor_display: string
+  sandbox_instance: string | null
+  sandbox_instance_name: string
+  sandbox_instance_status: string
   status: AgentStatus
   status_display: string
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
+}
+
+export interface SandboxOption {
+  id: string
+  name: string
+  type: string
+  type_display: string
+  status: string
+  status_display: string
 }
 
 export interface ExecutorOption {
@@ -64,6 +76,7 @@ export interface CreateAgentParams {
   system_prompt?: string
   llm_model?: string | null
   executor?: string | null
+  sandbox_instance: string
   status?: AgentStatus
   metadata?: Record<string, unknown>
 }
