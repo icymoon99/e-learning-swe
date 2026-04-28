@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 from django.test import TestCase
 
 from agent.models import ElAgent
+from sandbox.models import ElSandboxInstance
 from task.models import ElTask, ElTaskMemory
 
 
@@ -14,9 +15,10 @@ class TaskMemoryMiddlewareBeforeAgentTest(TestCase):
     def setUp(self):
         from task.middleware.task_memory import TaskMemoryMiddleware
 
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
         self.task = ElTask.objects.create(title="测试任务", description="描述")
         self.mw = TaskMemoryMiddleware(task_id=str(self.task.id))
-        self.agent = ElAgent.objects.create(code="analyzer", name="分析器")
+        self.agent = ElAgent.objects.create(code="analyzer", name="分析器", sandbox_instance=self.sandbox)
 
     def test_no_memories_returns_early(self):
         """无历史记忆时直接返回"""
@@ -75,12 +77,13 @@ class TaskMemoryMiddlewareAfterAgentTest(TestCase):
     def setUp(self):
         from task.middleware.task_memory import TaskMemoryMiddleware
 
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
         self.task = ElTask.objects.create(title="测试任务", description="描述")
         self.mw = TaskMemoryMiddleware(task_id=str(self.task.id))
 
     def test_saves_memory_on_success(self):
         """Agent 成功执行后，保存记忆"""
-        agent = ElAgent.objects.create(code="test-agent", name="测试Agent")
+        agent = ElAgent.objects.create(code="test-agent", name="测试Agent", sandbox_instance=self.sandbox)
 
         state = {
             "agent_output": {
@@ -111,7 +114,7 @@ class TaskMemoryMiddlewareAfterAgentTest(TestCase):
 
     def test_saves_memory_on_failure(self):
         """Agent 执行失败时，保存错误信息"""
-        agent = ElAgent.objects.create(code="test-agent", name="测试Agent")
+        agent = ElAgent.objects.create(code="test-agent", name="测试Agent", sandbox_instance=self.sandbox)
 
         with patch("task.middleware.task_memory.ElAgent.objects.get", return_value=agent):
             with patch("task.middleware.task_memory.ElTaskMemory") as MockMemory:
@@ -151,9 +154,10 @@ class TaskMemoryMiddlewareInternalTest(TestCase):
     def setUp(self):
         from task.middleware.task_memory import TaskMemoryMiddleware
 
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
         self.task = ElTask.objects.create(title="内部测试任务", description="描述")
         self.mw = TaskMemoryMiddleware(task_id=str(self.task.id))
-        self.agent = ElAgent.objects.create(code="int-test", name="内部测试")
+        self.agent = ElAgent.objects.create(code="int-test", name="内部测试", sandbox_instance=self.sandbox)
 
     def test_format_memories(self):
         """格式化记忆为结构化文本"""

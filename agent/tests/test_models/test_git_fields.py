@@ -1,12 +1,14 @@
 from django.test import TestCase
 from agent.models import ElAgent, ElAgentExecutionLog
+from sandbox.models import ElSandboxInstance
 
 
 class TestElAgentExecutionLogGitFields(TestCase):
     """ElAgentExecutionLog Git 结果字段测试"""
 
     def setUp(self):
-        self.agent = ElAgent.objects.create(code="git_fields", name="Git Fields Agent")
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
+        self.agent = ElAgent.objects.create(code="git_fields", name="Git Fields Agent", sandbox_instance=self.sandbox)
 
     def test_git_pr_url_default(self):
         """git_pr_url 默认为空字符串"""

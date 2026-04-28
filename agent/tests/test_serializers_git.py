@@ -1,13 +1,15 @@
 from django.test import TestCase
 from agent.models import ElAgent, ElAgentExecutionLog
 from agent.serializers import AgentExecutionLogSerializer
+from sandbox.models import ElSandboxInstance
 
 
 class TestAgentExecutionLogSerializerGitFields(TestCase):
     """AgentExecutionLogSerializer Git 字段测试"""
 
     def setUp(self):
-        self.agent = ElAgent.objects.create(code="ser_git", name="Serializer Git")
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
+        self.agent = ElAgent.objects.create(code="ser_git", name="Serializer Git", sandbox_instance=self.sandbox)
         self.log = ElAgentExecutionLog.objects.create(
             agent=self.agent,
             thread_id="thread-ser-git",

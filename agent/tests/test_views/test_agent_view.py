@@ -70,6 +70,7 @@ class TestAgentViewSet(APITestCase):
             "description": "A new agent",
             "system_prompt": "You are new",
             "llm_model": self.llm_model.id,
+            "sandbox_instance": self.sandbox.id,
         }
         resp = self.client.post("/api/agent/agents/", data, format="json")
         self.assertEqual(resp.status_code, 201, resp.json())
@@ -118,7 +119,8 @@ class TestAgentExecutionLogViewSet(APITestCase):
             username="testadmin", password="testpass123", is_superuser=True
         )
         self.client.force_authenticate(user=self.user)
-        self.agent = ElAgent.objects.create(code="log_api", name="Log API Agent")
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
+        self.agent = ElAgent.objects.create(code="log_api", name="Log API Agent", sandbox_instance=self.sandbox)
         ElAgentExecutionLog.objects.create(
             agent=self.agent, thread_id="thread-1", status="completed"
         )

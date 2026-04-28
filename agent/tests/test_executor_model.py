@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.db import IntegrityError
 from agent.models import ElAgent, ElExecutor
+from sandbox.models import ElSandboxInstance
 
 
 class TestElExecutor(TestCase):
@@ -30,20 +31,23 @@ class TestAgentExecutorFK(TestCase):
         self.executor = ElExecutor.objects.create(
             code='trae', name='Trae CLI', timeout=1800
         )
+        self.sandbox = ElSandboxInstance.objects.create(
+            name='test-sandbox', type='local'
+        )
 
     def test_agent_can_select_executor(self):
         agent = ElAgent.objects.create(
-            code='test', name='Test', executor=self.executor
+            code='test', name='Test', executor=self.executor, sandbox_instance=self.sandbox
         )
         self.assertEqual(agent.executor.code, 'trae')
         self.assertEqual(agent.executor.timeout, 1800)
 
     def test_agent_can_have_no_executor(self):
-        agent = ElAgent.objects.create(code='test2', name='Test2')
+        agent = ElAgent.objects.create(code='test2', name='Test2', sandbox_instance=self.sandbox)
         self.assertIsNone(agent.executor)
 
     def test_executor_related_query(self):
-        ElAgent.objects.create(code='a1', name='A1', executor=self.executor)
-        ElAgent.objects.create(code='a2', name='A2', executor=self.executor)
+        ElAgent.objects.create(code='a1', name='A1', executor=self.executor, sandbox_instance=self.sandbox)
+        ElAgent.objects.create(code='a2', name='A2', executor=self.executor, sandbox_instance=self.sandbox)
         agents = self.executor.agents.all()
         self.assertEqual(agents.count(), 2)

@@ -2,12 +2,14 @@ from django.test import TestCase
 from agent.models import ElAgent, ElAgentExecutionLog
 from agent.serializers import AgentSerializer, AgentExecutionLogSerializer
 from llm.models import ElLLMProvider, ElLLMModel
+from sandbox.models import ElSandboxInstance
 
 
 class TestAgentSerializer(TestCase):
     """AgentSerializer 测试"""
 
     def setUp(self):
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
         self.provider = ElLLMProvider.objects.create(
             code="anthropic", name="Anthropic"
         )
@@ -22,6 +24,7 @@ class TestAgentSerializer(TestCase):
             description="Testing serializer",
             system_prompt="You are a test agent",
             llm_model=self.llm_model,
+            sandbox_instance=self.sandbox,
         )
 
     def test_valid_serialization(self):
@@ -32,6 +35,7 @@ class TestAgentSerializer(TestCase):
             "description": "分析数据并生成报告",
             "system_prompt": "你是一个数据分析助手",
             "llm_model": self.llm_model.id,
+            "sandbox_instance": self.sandbox.id,
         }
         serializer = AgentSerializer(data=data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
@@ -44,7 +48,7 @@ class TestAgentSerializer(TestCase):
 
     def test_name_has_default(self):
         """测试 name 字段有默认值，不传也可以"""
-        serializer = AgentSerializer(data={"code": "test"})
+        serializer = AgentSerializer(data={"code": "test", "sandbox_instance": self.sandbox.id})
         self.assertTrue(serializer.is_valid(), serializer.errors)
         instance = serializer.save()
         self.assertEqual(instance.name, "")
@@ -76,6 +80,7 @@ class TestAgentExecutionLogSerializer(TestCase):
     """AgentExecutionLogSerializer 测试"""
 
     def setUp(self):
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
         self.provider = ElLLMProvider.objects.create(
             code="anthropic", name="Anthropic"
         )
@@ -84,7 +89,7 @@ class TestAgentExecutionLogSerializer(TestCase):
             model_code="claude-sonnet-4-6",
             display_name="Claude Sonnet 4.6",
         )
-        self.agent = ElAgent.objects.create(code="exec_test", name="Exec Test", llm_model=self.llm_model)
+        self.agent = ElAgent.objects.create(code="exec_test", name="Exec Test", llm_model=self.llm_model, sandbox_instance=self.sandbox)
         self.log = ElAgentExecutionLog.objects.create(
             agent=self.agent,
             thread_id="thread-serial",

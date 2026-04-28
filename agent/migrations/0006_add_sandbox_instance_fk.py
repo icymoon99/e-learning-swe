@@ -4,6 +4,15 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def populate_sandbox_instance(apps, schema_editor):
+    """将已有的 Agent 绑定到第一个可用的沙箱实例。"""
+    ElAgent = apps.get_model('agent', 'ElAgent')
+    ElSandboxInstance = apps.get_model('sandbox', 'ElSandboxInstance')
+    first_sandbox = ElSandboxInstance.objects.first()
+    if first_sandbox:
+        ElAgent.objects.filter(sandbox_instance__isnull=True).update(sandbox_instance=first_sandbox)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -17,6 +26,7 @@ class Migration(migrations.Migration):
             name='sandbox_instance',
             field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, related_name='agents', to='sandbox.elsandboxinstance', verbose_name='绑定沙箱实例'),
         ),
+        migrations.RunPython(populate_sandbox_instance, migrations.RunPython.noop),
         migrations.AlterField(
             model_name='elagent',
             name='sandbox_instance',

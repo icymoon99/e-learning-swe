@@ -1,15 +1,17 @@
 from django.test import TestCase
 from agent.models import ElAgent, ElAgentExecutionLog
 from agent.filters import ElAgentFilter, ElAgentExecutionLogFilter
+from sandbox.models import ElSandboxInstance
 
 
 class TestElAgentFilter(TestCase):
     """ElAgentFilter 测试"""
 
     def setUp(self):
-        ElAgent.objects.create(code="agent_a", name="Agent Alpha", status="active")
-        ElAgent.objects.create(code="agent_b", name="Agent Beta", status="inactive")
-        ElAgent.objects.create(code="agent_c", name="Searchable Agent", status="active")
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
+        ElAgent.objects.create(code="agent_a", name="Agent Alpha", status="active", sandbox_instance=self.sandbox)
+        ElAgent.objects.create(code="agent_b", name="Agent Beta", status="inactive", sandbox_instance=self.sandbox)
+        ElAgent.objects.create(code="agent_c", name="Searchable Agent", status="active", sandbox_instance=self.sandbox)
 
     def test_filter_by_status(self):
         """测试按状态过滤"""
@@ -37,7 +39,8 @@ class TestElAgentExecutionLogFilter(TestCase):
     """ElAgentExecutionLogFilter 测试"""
 
     def setUp(self):
-        self.agent = ElAgent.objects.create(code="log_filter", name="Log Filter Agent")
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
+        self.agent = ElAgent.objects.create(code="log_filter", name="Log Filter Agent", sandbox_instance=self.sandbox)
         ElAgentExecutionLog.objects.create(agent=self.agent, thread_id="thread-a", status="completed")
         ElAgentExecutionLog.objects.create(agent=self.agent, thread_id="thread-b", status="running")
         ElAgentExecutionLog.objects.create(agent=self.agent, thread_id="unique-thread", status="failed")

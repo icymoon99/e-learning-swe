@@ -2,12 +2,14 @@ from django.test import TestCase
 from django.db import IntegrityError
 from agent.models import ElAgent, ElAgentExecutionLog, AGENT_STATUS_CHOICES, EXECUTION_STATUS_CHOICES
 from llm.models import ElLLMProvider, ElLLMModel
+from sandbox.models import ElSandboxInstance
 
 
 class TestElAgent(TestCase):
     """ElAgent 模型测试"""
 
     def setUp(self):
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
         self.provider = ElLLMProvider.objects.create(
             code="openai", name="OpenAI"
         )
@@ -25,6 +27,7 @@ class TestElAgent(TestCase):
             description="自动审查代码质量",
             system_prompt="你是一个代码审查助手",
             llm_model=self.llm_model,
+            sandbox_instance=self.sandbox,
         )
         self.assertEqual(agent.code, "code_review")
         self.assertEqual(agent.status, "active")
@@ -42,13 +45,13 @@ class TestElAgent(TestCase):
 
     def test_agent_code_must_be_unique(self):
         """测试 code 字段唯一性约束"""
-        ElAgent.objects.create(code="test", name="Test Agent")
+        ElAgent.objects.create(code="test", name="Test Agent", sandbox_instance=self.sandbox)
         with self.assertRaises(IntegrityError):
-            ElAgent.objects.create(code="test", name="Duplicate Agent")
+            ElAgent.objects.create(code="test", name="Duplicate Agent", sandbox_instance=self.sandbox)
 
     def test_agent_str_representation(self):
         """测试 __str__ 返回名称和编码"""
-        agent = ElAgent.objects.create(code="reviewer", name="Reviewer")
+        agent = ElAgent.objects.create(code="reviewer", name="Reviewer", sandbox_instance=self.sandbox)
         self.assertIn("Reviewer", str(agent))
         self.assertIn("reviewer", str(agent))
 
@@ -61,6 +64,7 @@ class TestElAgent(TestCase):
                 "sub_agents": [{"name": "sub1", "tools": ["search"]}],
                 "hitl_tools": ["interrupt_request"],
             },
+            sandbox_instance=self.sandbox,
         )
         self.assertEqual(agent.metadata["sub_agents"][0]["name"], "sub1")
 
@@ -69,6 +73,7 @@ class TestElAgentExecutionLog(TestCase):
     """ElAgentExecutionLog 模型测试"""
 
     def setUp(self):
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
         self.provider = ElLLMProvider.objects.create(
             code="openai", name="OpenAI"
         )
@@ -78,7 +83,7 @@ class TestElAgentExecutionLog(TestCase):
             display_name="GPT-4o",
         )
         self.agent = ElAgent.objects.create(
-            code="test", name="Test Agent", llm_model=self.llm_model
+            code="test", name="Test Agent", llm_model=self.llm_model, sandbox_instance=self.sandbox
         )
 
     def test_create_execution_log_with_defaults(self):

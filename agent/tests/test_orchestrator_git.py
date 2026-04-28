@@ -11,12 +11,14 @@ from agent.context import GitContext
 from agent.models import ElAgent, ElAgentExecutionLog
 from agent.orchestrator import Orchestrator
 from llm.models import ElLLMProvider, ElLLMModel
+from sandbox.models import ElSandboxInstance
 
 
 class TestOrchestratorGitIntegration(TestCase):
     """Orchestrator Git 工作流集成测试"""
 
     def setUp(self):
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
         self.provider = ElLLMProvider.objects.create(
             code="anthropic", name="Anthropic"
         )
@@ -30,6 +32,7 @@ class TestOrchestratorGitIntegration(TestCase):
             name="Git Test Agent",
             system_prompt="You are a test agent",
             llm_model=self.llm_model,
+            sandbox_instance=self.sandbox,
         )
 
     def test_execute_without_git_works_normally(self):

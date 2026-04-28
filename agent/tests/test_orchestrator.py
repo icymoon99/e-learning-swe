@@ -3,12 +3,14 @@ from django.test import TestCase
 from agent.models import ElAgent, ElAgentExecutionLog, ElExecutor
 from agent.orchestrator import Orchestrator
 from llm.models import ElLLMProvider, ElLLMModel
+from sandbox.models import ElSandboxInstance
 
 
 class TestOrchestrator(TestCase):
     """Orchestrator 测试"""
 
     def setUp(self):
+        self.sandbox = ElSandboxInstance.objects.create(name="test-sandbox", type="local")
         self.provider = ElLLMProvider.objects.create(
             code="anthropic", name="Anthropic"
         )
@@ -22,6 +24,7 @@ class TestOrchestrator(TestCase):
             name="Test Agent",
             system_prompt="You are a test agent",
             llm_model=self.llm_model,
+            sandbox_instance=self.sandbox,
         )
 
     def test_get_or_create_agent_caches_instance(self):
