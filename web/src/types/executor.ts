@@ -27,6 +27,8 @@ export interface Executor {
   enabled: boolean
   timeout: number
   metadata_schema: ExecutorSchema
+  /** 前端使用的临时状态 */
+  _saving?: boolean
 }
 
 /** 更新执行器参数 */

@@ -183,7 +183,7 @@ const drawerVisible = ref(false)
 const drawerLoading = ref(false)
 const saving = ref(false)
 const editingExecutor = ref<Executor | null>(null)
-const editForm = ref<UpdateExecutorParams>({ enabled: true, metadata_schema_input: {} })
+const editForm = ref<UpdateExecutorParams>({ enabled: true, metadata_schema_input: { env_vars: {}, cli_args: {} } })
 
 function getGroupLabel(key: string): string {
   const labels: Record<string, string> = { env_vars: '环境变量', cli_args: '运行参数' }
