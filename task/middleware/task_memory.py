@@ -10,7 +10,6 @@ import json
 import logging
 from typing import Any
 
-from asgiref.sync import sync_to_async
 from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import AIMessage
 from langgraph.runtime import Runtime
@@ -23,7 +22,11 @@ logger = logging.getLogger(__name__)
 
 
 class TaskMemoryMiddleware(AgentMiddleware):
-    """任务级记忆中间件"""
+    """任务级记忆中间件
+
+    注意：before_agent / after_agent 必须为同步方法，
+    LangGraph 的 AgentMiddleware 不支持异步钩子。
+    """
 
     MEMORY_TOKEN_LIMIT = 8000  # 记忆注入的 token 上限
 
@@ -31,9 +34,9 @@ class TaskMemoryMiddleware(AgentMiddleware):
         self.task_id = task_id
         self.summarizer = MemorySummarizer()
 
-    async def before_agent(self, state: dict, runtime: Runtime) -> dict[str, Any] | None:
+    def before_agent(self, state: dict, runtime: Runtime) -> dict[str, Any] | None:
         """读取历史记忆，注入到系统提示词。"""
-        memories = await self._get_memories()
+        memories = self._get_memories()
 
         if not memories:
             logger.debug("TaskMemoryMiddleware: 无历史记忆，跳过")
@@ -50,7 +53,7 @@ class TaskMemoryMiddleware(AgentMiddleware):
                 "TaskMemoryMiddleware: 记忆超过阈值 (%d tokens)，触发摘要",
                 self._estimate_tokens(full_text),
             )
-            memory_context = await self._summarize_memories(memories)
+            memory_context = self._summarize_memories(memories)
 
         # 注入到系统提示词
         current_prompt = state.get("system_prompt", "")
@@ -58,7 +61,7 @@ class TaskMemoryMiddleware(AgentMiddleware):
         logger.info("TaskMemoryMiddleware: 历史记忆已注入到系统提示词")
         return None
 
-    async def after_agent(
+    def after_agent(
         self, state: dict, runtime: Runtime, *, success: bool = True
     ) -> dict[str, Any] | None:
         """解析 Agent 输出，保存本次执行结果到 ElTaskMemory。"""
@@ -71,9 +74,7 @@ class TaskMemoryMiddleware(AgentMiddleware):
         # 获取 Agent 实例（用于记录）
         agent = None
         try:
-            agent = await sync_to_async(
-                lambda: ElAgent.objects.get(code=agent_code), thread_sensitive=False
-            )()
+            agent = ElAgent.objects.get(code=agent_code)
         except ElAgent.DoesNotExist:
             logger.warning("TaskMemoryMiddleware: Agent(code=%s) 不存在", agent_code)
 
@@ -93,28 +94,22 @@ class TaskMemoryMiddleware(AgentMiddleware):
         error_message = state.get("error_message") if not success else None
 
         # 计算 execution_order
-        count = await sync_to_async(
-            lambda: ElTaskMemory.objects.filter(task_id=self.task_id).count(),
-            thread_sensitive=False,
-        )()
+        count = ElTaskMemory.objects.filter(task_id=self.task_id).count()
         order = count + 1
 
         # 创建记忆记录
-        await sync_to_async(
-            lambda: ElTaskMemory.objects.create(
-                task_id=self.task_id,
-                agent=agent,
-                thread_id=thread_id,
-                execution_order=order,
-                summary=summary,
-                commit_message=commit_message,
-                pr_url=git_pr_url,
-                commit_hash=git_commit_hash,
-                status="success" if success else "failed",
-                error_message=error_message,
-            ),
-            thread_sensitive=False,
-        )()
+        ElTaskMemory.objects.create(
+            task_id=self.task_id,
+            agent=agent,
+            thread_id=thread_id,
+            execution_order=order,
+            summary=summary,
+            commit_message=commit_message,
+            pr_url=git_pr_url,
+            commit_hash=git_commit_hash,
+            status="success" if success else "failed",
+            error_message=error_message,
+        )
 
         logger.info(
             "TaskMemoryMiddleware: 记忆已保存 (task=%s, order=%d)", self.task_id, order
@@ -125,13 +120,14 @@ class TaskMemoryMiddleware(AgentMiddleware):
     # 内部方法
     # ------------------------------------------------------------------ #
 
-    async def _get_memories(self):
+    def _get_memories(self):
         """查询成功的历史记忆。"""
-        query = ElTaskMemory.objects.filter(
-            task_id=self.task_id,
-            status="success",
-        ).order_by("execution_order")
-        return list(await sync_to_async(lambda: list(query), thread_sensitive=False)())
+        return list(
+            ElTaskMemory.objects.filter(
+                task_id=self.task_id,
+                status="success",
+            ).order_by("execution_order")
+        )
 
     def _format_memories(self, memories) -> str:
         """将记忆格式化为结构化文本。"""
@@ -153,10 +149,10 @@ class TaskMemoryMiddleware(AgentMiddleware):
         """估算 token 数。"""
         return estimate_tokens_fn(text)
 
-    async def _summarize_memories(self, memories) -> str:
+    def _summarize_memories(self, memories) -> str:
         """调用轻量 LLM 对历史记忆进行总结。"""
         full_text = self._format_memories(memories)
-        return await self.summarizer.summarize(full_text)
+        return self.summarizer.summarize(full_text)
 
     def _parse_agent_output(self, state: dict) -> tuple[str, str]:
         """从 Agent state 中解析 summary 和 commit_message。"""

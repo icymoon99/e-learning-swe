@@ -1,25 +1,11 @@
 """TaskMemoryMiddleware 单元测试。"""
 
-import asyncio
 from unittest.mock import MagicMock, patch
-from unittest.mock import AsyncMock
 
 from django.test import TestCase
 
 from agent.models import ElAgent
 from task.models import ElTask, ElTaskMemory
-
-
-def run_async(coro):
-    """Helper to run async code in sync tests."""
-    return asyncio.get_event_loop().run_until_complete(coro)
-
-
-def _immediate_async(fn):
-    """Replace sync_to_async with a version that returns an async wrapper executing fn."""
-    async def _call(*args, **kwargs):
-        return fn(*args, **kwargs)
-    return _call
 
 
 class TaskMemoryMiddlewareBeforeAgentTest(TestCase):
@@ -34,16 +20,12 @@ class TaskMemoryMiddlewareBeforeAgentTest(TestCase):
 
     def test_no_memories_returns_early(self):
         """无历史记忆时直接返回"""
-
-        async def _run():
-            with patch.object(self.mw, "_get_memories", new_callable=AsyncMock, return_value=[]):
-                state = {"system_prompt": "你是一个AI助手"}
-                runtime = MagicMock()
-                result = await self.mw.before_agent(state, runtime)
-                self.assertIsNone(result)
-                self.assertEqual(state["system_prompt"], "你是一个AI助手")
-
-        run_async(_run())
+        with patch.object(self.mw, "_get_memories", return_value=[]):
+            state = {"system_prompt": "你是一个AI助手"}
+            runtime = MagicMock()
+            result = self.mw.before_agent(state, runtime)
+            self.assertIsNone(result)
+            self.assertEqual(state["system_prompt"], "你是一个AI助手")
 
     def test_injects_full_memory_when_under_limit(self):
         """记忆未超过 token 阈值时，完整注入"""
@@ -55,18 +37,14 @@ class TaskMemoryMiddlewareBeforeAgentTest(TestCase):
             summary="分析完成",
             status="success",
         )
-        # Don't save to DB — just use in-memory object for the patch
 
-        async def _run():
-            with patch.object(self.mw, "_get_memories", new_callable=AsyncMock, return_value=[memory]):
-                with patch.object(self.mw, "_estimate_tokens", return_value=100):
-                    state = {"system_prompt": "你是一个AI助手"}
-                    runtime = MagicMock()
-                    await self.mw.before_agent(state, runtime)
-                    self.assertIn("## 任务历史记忆", state["system_prompt"])
-                    self.assertIn("分析完成", state["system_prompt"])
-
-        run_async(_run())
+        with patch.object(self.mw, "_get_memories", return_value=[memory]):
+            with patch.object(self.mw, "_estimate_tokens", return_value=100):
+                state = {"system_prompt": "你是一个AI助手"}
+                runtime = MagicMock()
+                self.mw.before_agent(state, runtime)
+                self.assertIn("## 任务历史记忆", state["system_prompt"])
+                self.assertIn("分析完成", state["system_prompt"])
 
     def test_summarizes_when_over_limit(self):
         """记忆超过 token 阈值时，调用摘要"""
@@ -79,19 +57,16 @@ class TaskMemoryMiddlewareBeforeAgentTest(TestCase):
             status="success",
         )
 
-        async def _run():
-            with patch.object(self.mw, "_get_memories", new_callable=AsyncMock, return_value=[memory]):
-                with patch.object(self.mw, "_estimate_tokens", return_value=10000):
-                    with patch.object(
-                        self.mw, "_summarize_memories", new_callable=AsyncMock, return_value="任务进度摘要"
-                    ) as mock_sum:
-                        state = {"system_prompt": "你是一个AI助手"}
-                        runtime = MagicMock()
-                        await self.mw.before_agent(state, runtime)
-                        mock_sum.assert_called_once()
-                        self.assertIn("任务进度摘要", state["system_prompt"])
-
-        run_async(_run())
+        with patch.object(self.mw, "_get_memories", return_value=[memory]):
+            with patch.object(self.mw, "_estimate_tokens", return_value=10000):
+                with patch.object(
+                    self.mw, "_summarize_memories", return_value="任务进度摘要"
+                ) as mock_sum:
+                    state = {"system_prompt": "你是一个AI助手"}
+                    runtime = MagicMock()
+                    self.mw.before_agent(state, runtime)
+                    mock_sum.assert_called_once()
+                    self.assertIn("任务进度摘要", state["system_prompt"])
 
 
 class TaskMemoryMiddlewareAfterAgentTest(TestCase):
@@ -124,10 +99,7 @@ class TaskMemoryMiddlewareAfterAgentTest(TestCase):
             with patch("task.middleware.task_memory.ElTaskMemory") as MockMemory:
                 MockMemory.objects.filter.return_value.count.return_value = 0
 
-                async def _run():
-                    await self.mw.after_agent(state, runtime, success=True)
-
-                run_async(_run())
+                self.mw.after_agent(state, runtime, success=True)
 
                 MockMemory.objects.create.assert_called_once()
                 call_kwargs = MockMemory.objects.create.call_args[1]
@@ -150,18 +122,11 @@ class TaskMemoryMiddlewareAfterAgentTest(TestCase):
                 runtime = MagicMock()
                 runtime.config.configurable = {"agent_code": "test-agent"}
 
-                with patch(
-                    "task.middleware.task_memory.sync_to_async",
-                    side_effect=lambda fn, **kwargs: _immediate_async(fn),
-                ):
-                    async def _run():
-                        await self.mw.after_agent(state, runtime, success=False)
+                self.mw.after_agent(state, runtime, success=False)
 
-                    run_async(_run())
-
-                    call_kwargs = MockMemory.objects.create.call_args[1]
-                    self.assertEqual(call_kwargs["status"], "failed")
-                    self.assertIn("数据库连接超时", call_kwargs["error_message"])
+                call_kwargs = MockMemory.objects.create.call_args[1]
+                self.assertEqual(call_kwargs["status"], "failed")
+                self.assertIn("数据库连接超时", call_kwargs["error_message"])
 
     def test_agent_not_found_logs_warning(self):
         """Agent 不存在时，agent 字段为 None"""
@@ -174,21 +139,14 @@ class TaskMemoryMiddlewareAfterAgentTest(TestCase):
                 runtime = MagicMock()
                 runtime.config.configurable = {"agent_code": "nonexistent"}
 
-                with patch(
-                    "task.middleware.task_memory.sync_to_async",
-                    side_effect=lambda fn, **kwargs: _immediate_async(fn),
-                ):
-                    async def _run():
-                        await self.mw.after_agent(state, runtime, success=True)
+                self.mw.after_agent(state, runtime, success=True)
 
-                    run_async(_run())
-
-                    call_kwargs = MockMemory.objects.create.call_args[1]
-                    self.assertIsNone(call_kwargs["agent"])
+                call_kwargs = MockMemory.objects.create.call_args[1]
+                self.assertIsNone(call_kwargs["agent"])
 
 
 class TaskMemoryMiddlewareInternalTest(TestCase):
-    """内部方法测试（sync only, no async DB ops needed)"""
+    """内部方法测试"""
 
     def setUp(self):
         from task.middleware.task_memory import TaskMemoryMiddleware
