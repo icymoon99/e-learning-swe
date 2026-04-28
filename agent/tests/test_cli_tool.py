@@ -65,3 +65,27 @@ class TestCreateCLITool(unittest.TestCase):
     def test_unknown_executor_raises(self):
         with self.assertRaises(KeyError):
             create_cli_tool('unknown', self.mock_backend)
+
+    def test_env_vars_passed_to_backend(self):
+        """验证 env_vars 从 create_cli_tool 传递到 backend.execute"""
+        env_vars = {"API_KEY": "secret-123", "DEBUG": "true"}
+        tool = create_cli_tool(
+            'mock', self.mock_backend, env_vars=env_vars,
+        )
+        self.mock_backend.execute.return_value = MagicMock(
+            output='{"status": "success", "message": "ok"}'
+        )
+        tool.invoke({'query': '测试环境变量', 'session_id': None})
+        self.mock_backend.execute.assert_called_once()
+        call_kwargs = self.mock_backend.execute.call_args[1]
+        self.assertEqual(call_kwargs['env'], env_vars)
+
+    def test_env_vars_none_by_default(self):
+        """验证不传 env_vars 时 backend.execute 收到 None"""
+        tool = create_cli_tool('mock', self.mock_backend)
+        self.mock_backend.execute.return_value = MagicMock(
+            output='{"status": "success", "message": "ok"}'
+        )
+        tool.invoke({'query': '测试', 'session_id': None})
+        call_kwargs = self.mock_backend.execute.call_args[1]
+        self.assertIsNone(call_kwargs['env'])

@@ -5,7 +5,7 @@ import shlex
 
 from deepagents.backends.protocol import ExecuteResponse
 
-from sandbox.backends.base import BaseSandboxBackend
+from sandbox.backends.base import BaseSandboxBackend, _sanitize_env
 from sandbox.executors import SSHConfig, execute_remote
 
 logger = logging.getLogger(__name__)
@@ -34,14 +34,28 @@ class RemoteDockerBackend(BaseSandboxBackend):
         escaped_inner = shlex.quote(inner_cmd)
         return f"docker exec {self._container_name} bash -c {escaped_inner}"
 
-    def execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
-        result = execute_remote(command, self._ssh_config, timeout=timeout or 300)
+    def execute(
+        self, command: str, *, timeout: int | None = None, env: dict | None = None
+    ) -> ExecuteResponse:
+        full_cmd = self._build_cmd_with_env(command, env)
+        result = execute_remote(full_cmd, self._ssh_config, timeout=timeout or 300)
         output = result.stdout
         if result.stderr:
             output = output + result.stderr if output else result.stderr
         return ExecuteResponse(
             output=output, exit_code=result.exit_code, truncated=False
         )
+
+    def _build_cmd_with_env(self, inner_cmd: str, env: dict | None = None) -> str:
+        """构建 docker exec 命令，包含环境变量。"""
+        safe_env = _sanitize_env(env) if env else {}
+
+        env_args = ""
+        for key, value in safe_env.items():
+            env_args += f" -e {shlex.quote(key)}={shlex.quote(value)}"
+
+        escaped_inner = shlex.quote(inner_cmd)
+        return f"docker exec{env_args} {self._container_name} bash -c {escaped_inner}"
 
     def _remote_shell(self, cmd: str, timeout: int = 300) -> None:
         """在远程服务器上执行 shell 命令（非 docker exec）"""

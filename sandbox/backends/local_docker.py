@@ -6,7 +6,7 @@ import subprocess
 
 from deepagents.backends.protocol import ExecuteResponse
 
-from sandbox.backends.base import BaseSandboxBackend
+from sandbox.backends.base import BaseSandboxBackend, _sanitize_env
 from sandbox.executors import execute_local
 
 logger = logging.getLogger(__name__)
@@ -32,14 +32,27 @@ class LocalDockerBackend(BaseSandboxBackend):
     def _build_cmd(self, inner_cmd: str) -> str:
         return f"docker exec {self._container_name} bash -c {shlex.quote(inner_cmd)}"
 
-    def execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
-        result = execute_local(command, timeout=timeout or 300)
+    def execute(
+        self, command: str, *, timeout: int | None = None, env: dict | None = None
+    ) -> ExecuteResponse:
+        full_cmd = self._build_cmd_with_env(command, env)
+        result = execute_local(full_cmd, timeout=timeout or 300)
         output = result.stdout
         if result.stderr:
             output = output + result.stderr if output else result.stderr
         return ExecuteResponse(
             output=output, exit_code=result.exit_code, truncated=False
         )
+
+    def _build_cmd_with_env(self, inner_cmd: str, env: dict | None = None) -> str:
+        """构建 docker exec 命令，包含环境变量。"""
+        safe_env = _sanitize_env(env) if env else {}
+
+        env_args = ""
+        for key, value in safe_env.items():
+            env_args += f" -e {shlex.quote(key)}={shlex.quote(value)}"
+
+        return f"docker exec{env_args} {self._container_name} bash -c {shlex.quote(inner_cmd)}"
 
     def ensure_container(self) -> None:
         """确保容器存在"""

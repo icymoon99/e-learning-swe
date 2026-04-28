@@ -17,6 +17,7 @@ def create_cli_tool(
     executor_code: str,
     backend: Any,
     timeout: int = 3600,
+    env_vars: dict | None = None,
 ):
     """创建 LangChain CLI 执行器 Tool。
 
@@ -24,6 +25,7 @@ def create_cli_tool(
         executor_code: 执行器标识（如 'trae'）
         backend: 沙箱后端实例，用于 execute()
         timeout: 执行超时（秒）
+        env_vars: 从 ElExecutor.metadata 中提取的环境变量
 
     Returns:
         LangChain Tool 实例
@@ -51,7 +53,7 @@ def create_cli_tool(
         )
         cmd_str = shlex.join(cmd_parts)
 
-        result = backend.execute(cmd_str, timeout=timeout)
+        result = backend.execute(cmd_str, timeout=timeout, env=env_vars)
 
         parsed = executor.parse_output(result.output)
 

@@ -6,7 +6,7 @@ import shlex
 
 from deepagents.backends.protocol import ExecuteResponse
 
-from sandbox.backends.base import BaseSandboxBackend
+from sandbox.backends.base import BaseSandboxBackend, _sanitize_env
 from sandbox.executors import execute_local
 
 logger = logging.getLogger(__name__)
@@ -27,8 +27,11 @@ class LocalSystemBackend(BaseSandboxBackend):
     def _build_cmd(self, inner_cmd: str) -> str:
         return f"cd {shlex.quote(self._work_dir)} && {inner_cmd}"
 
-    def execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
-        result = execute_local(command, timeout=timeout or 300)
+    def execute(
+        self, command: str, *, timeout: int | None = None, env: dict | None = None
+    ) -> ExecuteResponse:
+        safe_env = _sanitize_env(env) if env else None
+        result = execute_local(command, timeout=timeout or 300, env=safe_env)
         output = result.stdout
         if result.stderr:
             output = output + result.stderr if output else result.stderr
