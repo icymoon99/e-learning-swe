@@ -88,7 +88,8 @@ class SandboxInstanceCRUDTest(APITestCase):
 
     def test_execute_localsystem(self):
         instance = ElSandboxInstance.objects.create(
-            name="exec-good", type="localsystem"
+            name="exec-good", type="localsystem",
+            metadata={"work_dir": "/tmp"},
         )
         resp = self.client.post(
             f"/api/sandbox/instances/{instance.id}/execute/",

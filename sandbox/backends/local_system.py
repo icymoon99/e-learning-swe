@@ -31,7 +31,8 @@ class LocalSystemBackend(BaseSandboxBackend):
         self, command: str, *, timeout: int | None = None, env: dict | None = None
     ) -> ExecuteResponse:
         safe_env = _sanitize_env(env) if env else None
-        result = execute_local(command, timeout=timeout or 300, env=safe_env)
+        full_cmd = self._build_cmd(command)
+        result = execute_local(full_cmd, timeout=timeout or 300, env=safe_env)
         output = result.stdout
         if result.stderr:
             output = output + result.stderr if output else result.stderr

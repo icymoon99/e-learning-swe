@@ -5,6 +5,9 @@ import os
 import re
 import shlex
 
+import posixpath
+
+from core.common.exception.api_exception import ApiException
 from deepagents.backends.protocol import (
     EditResult,
     ExecuteResponse,
@@ -61,6 +64,22 @@ class BaseSandboxBackend(SandboxBackendProtocol):
 
     def execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
         raise NotImplementedError
+
+    # =========================================================================
+    # 路径校验
+    # =========================================================================
+
+    def _validate_path(self, file_path: str) -> str:
+        """校验文件路径必须在 work_dir 范围内，防止路径遍历攻击。"""
+        if hasattr(self, "_work_dir"):
+            real_path = posixpath.normpath(file_path)
+            work_dir = posixpath.normpath(self._work_dir)
+            if not real_path.startswith(work_dir + "/") and real_path != work_dir:
+                raise ApiException(
+                    msg=f"路径遍历被拒绝: {file_path} 超出工作目录 {self._work_dir}"
+                )
+            return real_path
+        return file_path
 
     # =========================================================================
     # 文件读取

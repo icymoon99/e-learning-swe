@@ -31,7 +31,7 @@ class RemoteDockerBackend(BaseSandboxBackend):
         return self._container_name
 
     def _build_cmd(self, inner_cmd: str) -> str:
-        escaped_inner = shlex.quote(inner_cmd)
+        escaped_inner = shlex.quote(f"cd {shlex.quote(self._work_dir)} && {inner_cmd}")
         return f"docker exec {self._container_name} bash -c {escaped_inner}"
 
     def execute(
@@ -54,7 +54,7 @@ class RemoteDockerBackend(BaseSandboxBackend):
         for key, value in safe_env.items():
             env_args += f" -e {shlex.quote(key)}={shlex.quote(value)}"
 
-        escaped_inner = shlex.quote(inner_cmd)
+        escaped_inner = shlex.quote(f"cd {shlex.quote(self._work_dir)} && {inner_cmd}")
         return f"docker exec{env_args} {self._container_name} bash -c {escaped_inner}"
 
     def _remote_shell(self, cmd: str, timeout: int = 300) -> None:

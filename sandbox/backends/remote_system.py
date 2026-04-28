@@ -32,7 +32,8 @@ class RemoteSystemBackend(BaseSandboxBackend):
     def execute(
         self, command: str, *, timeout: int | None = None, env: dict | None = None
     ) -> ExecuteResponse:
-        full_cmd = self._build_cmd_with_env(command, env)
+        cmd_with_cd = self._build_cmd(command)
+        full_cmd = self._build_cmd_with_env(cmd_with_cd, env)
         result = execute_remote(full_cmd, self._ssh_config, timeout=timeout or 300)
         output = result.stdout
         if result.stderr:

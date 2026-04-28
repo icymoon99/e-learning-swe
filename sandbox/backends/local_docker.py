@@ -30,7 +30,7 @@ class LocalDockerBackend(BaseSandboxBackend):
         return self._container_name
 
     def _build_cmd(self, inner_cmd: str) -> str:
-        return f"docker exec {self._container_name} bash -c {shlex.quote(inner_cmd)}"
+        return f"docker exec {self._container_name} bash -c {shlex.quote(f'cd {shlex.quote(self._work_dir)} && {inner_cmd}')}"
 
     def execute(
         self, command: str, *, timeout: int | None = None, env: dict | None = None
@@ -52,7 +52,7 @@ class LocalDockerBackend(BaseSandboxBackend):
         for key, value in safe_env.items():
             env_args += f" -e {shlex.quote(key)}={shlex.quote(value)}"
 
-        return f"docker exec{env_args} {self._container_name} bash -c {shlex.quote(inner_cmd)}"
+        return f"docker exec{env_args} {self._container_name} bash -c {shlex.quote(f'cd {shlex.quote(self._work_dir)} && {inner_cmd}')}"
 
     def ensure_container(self) -> None:
         """确保容器存在"""

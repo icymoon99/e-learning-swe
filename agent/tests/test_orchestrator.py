@@ -110,8 +110,11 @@ class TestOrchestrator(TestCase):
     def test_build_agent_creates_deep_agent(self):
         """验证 _build_agent 调用 create_deep_agent"""
         orchestrator = Orchestrator()
-        with mock.patch("agent.orchestrator.create_deep_agent") as mock_create:
+        with mock.patch("agent.orchestrator.resolve_backend") as mock_resolve, \
+             mock.patch("agent.orchestrator.create_deep_agent") as mock_create:
             mock_create.return_value = mock.MagicMock()
+            mock_llm_backend = mock.MagicMock()
+            mock_resolve.return_value = mock_llm_backend
             with mock.patch("agent.orchestrator.ChatOpenAI") as mock_llm:
                 mock_llm.return_value = mock.MagicMock()
                 orchestrator._build_agent(self.agent.id)
@@ -128,12 +131,14 @@ class TestOrchestrator(TestCase):
         self.agent.save()
 
         orchestrator = Orchestrator()
-        with mock.patch("agent.orchestrator.create_deep_agent") as mock_create, \
+        with mock.patch("agent.orchestrator.resolve_backend") as mock_resolve, \
+             mock.patch("agent.orchestrator.create_deep_agent") as mock_create, \
              mock.patch("agent.orchestrator.ChatOpenAI") as mock_llm, \
              mock.patch("agent.orchestrator.create_cli_tool") as mock_cli_tool:
             mock_create.return_value = mock.MagicMock()
             mock_llm.return_value = mock.MagicMock()
             mock_cli_tool.return_value = mock.MagicMock()
+            mock_resolve.return_value = mock.MagicMock()
 
             orchestrator._build_agent(self.agent.id)
 
@@ -152,12 +157,14 @@ class TestOrchestrator(TestCase):
         self.agent.save()
 
         orchestrator = Orchestrator()
-        with mock.patch("agent.orchestrator.create_deep_agent") as mock_create, \
+        with mock.patch("agent.orchestrator.resolve_backend") as mock_resolve, \
+             mock.patch("agent.orchestrator.create_deep_agent") as mock_create, \
              mock.patch("agent.orchestrator.ChatOpenAI") as mock_llm, \
              mock.patch("agent.orchestrator.create_cli_tool") as mock_cli_tool:
             mock_create.return_value = mock.MagicMock()
             mock_llm.return_value = mock.MagicMock()
             mock_cli_tool.return_value = mock.MagicMock()
+            mock_resolve.return_value = mock.MagicMock()
 
             orchestrator._build_agent(self.agent.id)
 

@@ -57,6 +57,12 @@ class GitSandboxMiddleware(AgentMiddleware):
         )
 
         try:
+            # 确保沙箱工作目录存在
+            if hasattr(self.backend, "ensure_dir"):
+                self.backend.ensure_dir()
+            elif hasattr(self.backend, "ensure_container"):
+                self.backend.ensure_container()
+
             self._execute_in_sandbox("rm -rf *")
             self._execute_in_sandbox(f"git clone {ctx.git_repo_url} .")
             self._execute_in_sandbox(
