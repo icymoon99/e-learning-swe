@@ -43,7 +43,6 @@ class ElAgent(AbstractBaseModel):
     sandbox_instance = models.ForeignKey(
         'sandbox.ElSandboxInstance', on_delete=models.PROTECT,
         related_name='agents', verbose_name='绑定沙箱实例',
-        null=True,
     )
 
     class Meta:

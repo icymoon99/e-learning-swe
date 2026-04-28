@@ -17,4 +17,9 @@ class Migration(migrations.Migration):
             name='sandbox_instance',
             field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, related_name='agents', to='sandbox.elsandboxinstance', verbose_name='绑定沙箱实例'),
         ),
+        migrations.AlterField(
+            model_name='elagent',
+            name='sandbox_instance',
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='agents', to='sandbox.elsandboxinstance', verbose_name='绑定沙箱实例'),
+        ),
     ]
