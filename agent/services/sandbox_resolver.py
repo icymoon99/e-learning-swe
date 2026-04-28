@@ -1,7 +1,4 @@
-"""根据 Agent 配置解析沙箱后端。
-
-任务模块尚未实现时，这里从 Agent metadata 中读取后端配置。
-"""
+"""根据 Agent 配置解析沙箱后端。"""
 
 from __future__ import annotations
 
@@ -15,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def resolve_backend(agent_config: ElAgent):
-    """从 Agent 配置中解析沙箱后端。
+    """从 Agent FK 字段解析沙箱后端。
 
     Args:
         agent_config: Agent 配置模型实例
@@ -24,23 +21,29 @@ def resolve_backend(agent_config: ElAgent):
         SandboxBackendProtocol 实现
 
     Raises:
-        ApiException: Agent 未配置 sandbox_instance_id
+        ApiException: 沙箱未配置、未启动或状态异常
     """
     from sandbox.backends import get_backend
-    from sandbox.models import ElSandboxInstance
 
-    metadata = agent_config.metadata
-    sandbox_id = metadata.get("sandbox_instance_id")
+    instance = agent_config.sandbox_instance
 
-    if not sandbox_id:
+    if instance is None:
         raise ApiException(
-            msg=f"Agent '{agent_config.name}' (id={agent_config.id}) 未配置沙箱实例，请在 Agent metadata 中设置 sandbox_instance_id"
+            msg=f"Agent '{agent_config.name}' (id={agent_config.id}) 未配置沙箱实例"
         )
 
-    instance = ElSandboxInstance.objects.get(id=sandbox_id)
+    if instance.status == "inactive":
+        raise ApiException(
+            msg=f"Agent '{agent_config.name}' 绑定的沙箱 '{instance.name}' 未启动，请先在沙箱管理中启动"
+        )
+
+    if instance.status == "error":
+        raise ApiException(
+            msg=f"Agent '{agent_config.name}' 绑定的沙箱 '{instance.name}' 状态异常，请检查"
+        )
+
     backend = get_backend(instance)
 
-    # 确保沙箱就绪
     if hasattr(backend, "ensure_container"):
         try:
             backend.ensure_container()
