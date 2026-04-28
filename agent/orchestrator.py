@@ -85,10 +85,12 @@ class Orchestrator:
         executor = agent_config.executor
         if executor and executor.enabled:
             try:
+                env_vars = executor.metadata.get("env_vars") or None
                 tool = create_cli_tool(
                     executor_code=executor.code,
                     backend=backend,
                     timeout=executor.timeout,
+                    env_vars=env_vars,
                 )
                 tools.append(tool)
             except KeyError:

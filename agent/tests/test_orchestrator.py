@@ -1,6 +1,6 @@
 from unittest import mock
 from django.test import TestCase
-from agent.models import ElAgent, ElAgentExecutionLog
+from agent.models import ElAgent, ElAgentExecutionLog, ElExecutor
 from agent.orchestrator import Orchestrator
 from llm.models import ElLLMProvider, ElLLMModel
 
@@ -116,3 +116,51 @@ class TestOrchestrator(TestCase):
                 mock_llm.return_value = mock.MagicMock()
                 orchestrator._build_agent(self.agent.id)
                 mock_create.assert_called_once()
+
+    def test_build_agent_pass_env_vars_from_executor_metadata(self):
+        """验证 _build_agent 从 executor.metadata 提取 env_vars 传递给 create_cli_tool"""
+        executor = ElExecutor.objects.create(
+            code="test_executor",
+            name="Test Executor",
+            metadata={"env_vars": {"API_KEY": "secret", "DEBUG": "true"}},
+        )
+        self.agent.executor = executor
+        self.agent.save()
+
+        orchestrator = Orchestrator()
+        with mock.patch("agent.orchestrator.create_deep_agent") as mock_create, \
+             mock.patch("agent.orchestrator.ChatOpenAI") as mock_llm, \
+             mock.patch("agent.orchestrator.create_cli_tool") as mock_cli_tool:
+            mock_create.return_value = mock.MagicMock()
+            mock_llm.return_value = mock.MagicMock()
+            mock_cli_tool.return_value = mock.MagicMock()
+
+            orchestrator._build_agent(self.agent.id)
+
+            mock_cli_tool.assert_called_once()
+            call_kwargs = mock_cli_tool.call_args[1]
+            self.assertEqual(call_kwargs["env_vars"], {"API_KEY": "secret", "DEBUG": "true"})
+
+    def test_build_agent_handles_empty_env_vars(self):
+        """验证 executor.metadata 无 env_vars 时传递 None"""
+        executor = ElExecutor.objects.create(
+            code="test_executor2",
+            name="Test Executor 2",
+            metadata={"other_field": "value"},
+        )
+        self.agent.executor = executor
+        self.agent.save()
+
+        orchestrator = Orchestrator()
+        with mock.patch("agent.orchestrator.create_deep_agent") as mock_create, \
+             mock.patch("agent.orchestrator.ChatOpenAI") as mock_llm, \
+             mock.patch("agent.orchestrator.create_cli_tool") as mock_cli_tool:
+            mock_create.return_value = mock.MagicMock()
+            mock_llm.return_value = mock.MagicMock()
+            mock_cli_tool.return_value = mock.MagicMock()
+
+            orchestrator._build_agent(self.agent.id)
+
+            mock_cli_tool.assert_called_once()
+            call_kwargs = mock_cli_tool.call_args[1]
+            self.assertIsNone(call_kwargs["env_vars"])
