@@ -30,7 +30,7 @@ class ElLLMProviderCreateSerializer(serializers.ModelSerializer):
         fields = ["id", "code", "name", "base_url", "api_key_encrypted", "enabled", "description"]
         read_only_fields = ["id"]
         extra_kwargs = {
-            "api_key_encrypted": {"write_only": True},
+            "api_key_encrypted": {"write_only": True, "required": False, "allow_blank": True},
         }
 
 
