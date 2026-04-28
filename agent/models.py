@@ -40,6 +40,11 @@ class ElAgent(AbstractBaseModel):
         'ElExecutor', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='agents', verbose_name='CLI 执行器'
     )
+    sandbox_instance = models.ForeignKey(
+        'sandbox.ElSandboxInstance', on_delete=models.PROTECT,
+        related_name='agents', verbose_name='绑定沙箱实例',
+        null=True,
+    )
 
     class Meta:
         db_table = "el_agent"
