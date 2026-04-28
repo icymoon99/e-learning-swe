@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from sandbox.models import ElSandboxInstance
+from agent.models import ElAgent
+from llm.models import ElLLMProvider, ElLLMModel
 
 
 User = get_user_model()
@@ -130,3 +132,24 @@ class SandboxInstanceCRUDTest(APITestCase):
         for type_name, type_schema in types.items():
             self.assertIn("label", type_schema)
             self.assertIn("fields", type_schema)
+
+    def test_delete_sandbox_with_bound_agent_fails(self):
+        """有 Agent 绑定的沙箱不能删除"""
+        provider = ElLLMProvider.objects.create(code="test", name="Test")
+        llm = ElLLMModel.objects.create(
+            provider=provider, model_code="test-model", display_name="Test"
+        )
+        instance = ElSandboxInstance.objects.create(
+            name="bound-sandbox", type="localsystem",
+            metadata={"work_dir": "/tmp"},
+        )
+        ElAgent.objects.create(
+            code="bound-agent", name="Bound Agent",
+            llm_model=llm, sandbox_instance=instance,
+        )
+
+        resp = self.client.delete(f"/api/sandbox/instances/{instance.id}/")
+        data = resp.json()
+        self.assertIn("绑定", data.get("message", ""))
+        # 沙箱应仍然存在
+        self.assertTrue(ElSandboxInstance.objects.filter(id=instance.id).exists())

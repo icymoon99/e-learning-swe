@@ -2,6 +2,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 
 from core.common.exception.api_response import ApiResponse
+from core.common.exception.api_exception import ApiException
 from sandbox.filters import SandboxInstanceFilter
 from sandbox.models import ElSandboxInstance
 from sandbox.serializers import SandboxInstanceSerializer
@@ -42,6 +43,13 @@ class SandboxInstanceViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+
+        if instance.agents.exists():
+            agent_names = ", ".join(a.name for a in instance.agents.all())
+            raise ApiException(
+                msg=f"无法删除沙箱：已被以下 Agent 绑定 — {agent_names}，请先解绑 Agent"
+            )
+
         instance_id = str(instance.id)
         service = SandboxService()
         service.delete(instance)
