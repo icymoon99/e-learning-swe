@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from core.common.exception.api_exception import ApiException
+
 from agent.models import ElAgent
 
 
@@ -18,7 +20,6 @@ def resolve_backend(agent_config: ElAgent):
         SandboxBackendProtocol 实现
     """
     from sandbox.backends import get_backend
-    from sandbox.backends.local_system import LocalSystemBackend
     from sandbox.models import ElSandboxInstance
 
     metadata = agent_config.metadata
@@ -28,5 +29,6 @@ def resolve_backend(agent_config: ElAgent):
         instance = ElSandboxInstance.objects.get(id=sandbox_id)
         return get_backend(instance)
 
-    # 默认返回本地系统后端
-    return LocalSystemBackend(name="default", root_path="/tmp", work_dir="/workspace")
+    raise ApiException(
+        msg=f"Agent '{agent_config.name}' (id={agent_config.id}) 未配置沙箱实例，请在 Agent metadata 中设置 sandbox_instance_id"
+    )
