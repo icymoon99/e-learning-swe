@@ -29,4 +29,4 @@ def resolve_backend(agent_config: ElAgent):
         return get_backend(instance)
 
     # 默认返回本地系统后端
-    return LocalSystemBackend(name="default", root_path="/workspace", work_dir="/workspace")
+    return LocalSystemBackend(name="default", root_path="/tmp", work_dir="/workspace")
