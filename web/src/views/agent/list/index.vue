@@ -32,6 +32,7 @@
         <el-table-column prop="name" label="名称" min-width="200" show-overflow-tooltip header-align="center" />
         <el-table-column prop="llm_model_display" label="LLM 模型" width="150" show-overflow-tooltip header-align="center" />
         <el-table-column prop="executor_display" label="执行器" width="150" show-overflow-tooltip header-align="center" />
+        <el-table-column prop="sandbox_instance_name" label="绑定沙箱" width="180" show-overflow-tooltip header-align="center" />
         <el-table-column label="状态" width="150" align="center" header-align="center">
           <template #default="{ row }">
             <span class="status-badge" :class="getStatusClass(row.status)">
@@ -107,6 +108,16 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="绑定沙箱" required>
+          <el-select v-model="form.sandbox_instance" placeholder="选择沙箱实例" clearable style="width: 100%" @focus="loadSandboxes">
+            <el-option
+              v-for="s in sandboxOptions"
+              :key="s.id"
+              :label="`${s.name}（${s.type_display}）- ${s.status_display}`"
+              :value="s.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width: 100%">
             <el-option label="启用" value="active" />
@@ -134,7 +145,8 @@ import {
   getExecutorListApi,
 } from '@/api/agent'
 import { getLLMModelDropdownApi } from '@/api/llm'
-import type { AgentInstance, AgentStatus, ExecutorOption } from '@/types/agent'
+import { getSandboxListApi } from '@/api/sandbox'
+import type { AgentInstance, AgentStatus, ExecutorOption, SandboxOption } from '@/types/agent'
 import type { LLMModelDropdown } from '@/types/llm'
 
 // 状态
@@ -159,6 +171,7 @@ const form = ref({
   system_prompt: '',
   llm_model: null as string | null,
   executor: null as string | null,
+  sandbox_instance: '' as string,
   status: 'active' as AgentStatus,
   metadata: {} as Record<string, unknown>,
 })
@@ -189,6 +202,26 @@ async function loadExecutors() {
   } catch { /* 忽略 */ }
 }
 
+// 沙箱实例下拉
+const sandboxOptions = ref<SandboxOption[]>([])
+const sandboxLoaded = ref(false)
+
+async function loadSandboxes() {
+  if (sandboxLoaded.value) return
+  try {
+    const resp = await getSandboxListApi({ page: 1, page_size: 50 })
+    sandboxOptions.value = resp.data.content?.results?.map((s: { id: string; name: string; type: string; type_display: string; status: string; status_display: string }) => ({
+      id: s.id,
+      name: s.name,
+      type: s.type,
+      type_display: s.type_display,
+      status: s.status,
+      status_display: s.status_display,
+    })) || []
+    sandboxLoaded.value = true
+  } catch { /* 忽略 */ }
+}
+
 // 加载数据
 async function loadData() {
   loading.value = true
@@ -214,7 +247,7 @@ function onPageSizeChange() { currentPage.value = 1; loadData() }
 function handleCreate() {
   editingId.value = null
   formTitle.value = '创建 Agent'
-  form.value = { code: '', name: '', description: '', system_prompt: '', llm_model: null, executor: null, status: 'active', metadata: {} }
+  form.value = { code: '', name: '', description: '', system_prompt: '', llm_model: null, executor: null, sandbox_instance: '', status: 'active', metadata: {} }
   formVisible.value = true
 }
 
@@ -222,19 +255,49 @@ function handleCreate() {
 function handleEdit(row: AgentInstance) {
   editingId.value = row.id
   formTitle.value = '编辑 Agent'
-  form.value = { code: row.code, name: row.name, description: row.description, system_prompt: row.system_prompt, llm_model: row.llm_model, executor: row.executor, status: row.status, metadata: { ...row.metadata } }
+  form.value = {
+    code: row.code,
+    name: row.name,
+    description: row.description,
+    system_prompt: row.system_prompt,
+    llm_model: row.llm_model,
+    executor: row.executor,
+    sandbox_instance: row.sandbox_instance || '',
+    status: row.status,
+    metadata: { ...row.metadata },
+  }
   formVisible.value = true
 }
 
 // 保存
 async function handleSave() {
   if (!form.value.code) { ElMessage.warning('编码为必填字段'); return }
+  if (!form.value.sandbox_instance) { ElMessage.warning('绑定沙箱为必填字段'); return }
   try {
     if (editingId.value) {
-      await updateAgentApi(editingId.value, { name: form.value.name, description: form.value.description, system_prompt: form.value.system_prompt, llm_model: form.value.llm_model, executor: form.value.executor, status: form.value.status, metadata: form.value.metadata })
+      await updateAgentApi(editingId.value, {
+        name: form.value.name,
+        description: form.value.description,
+        system_prompt: form.value.system_prompt,
+        llm_model: form.value.llm_model,
+        executor: form.value.executor,
+        sandbox_instance: form.value.sandbox_instance,
+        status: form.value.status,
+        metadata: form.value.metadata,
+      })
       ElMessage.success('更新成功')
     } else {
-      await createAgentApi({ code: form.value.code, name: form.value.name, description: form.value.description, system_prompt: form.value.system_prompt, llm_model: form.value.llm_model, executor: form.value.executor, status: form.value.status, metadata: form.value.metadata })
+      await createAgentApi({
+        code: form.value.code,
+        name: form.value.name,
+        description: form.value.description,
+        system_prompt: form.value.system_prompt,
+        llm_model: form.value.llm_model,
+        executor: form.value.executor,
+        sandbox_instance: form.value.sandbox_instance,
+        status: form.value.status,
+        metadata: form.value.metadata,
+      })
       ElMessage.success('创建成功')
     }
     formVisible.value = false
@@ -243,7 +306,7 @@ async function handleSave() {
 }
 
 function resetForm() {
-  form.value = { code: '', name: '', description: '', system_prompt: '', llm_model: null, executor: null, status: 'active', metadata: {} }
+  form.value = { code: '', name: '', description: '', system_prompt: '', llm_model: null, executor: null, sandbox_instance: '', status: 'active', metadata: {} }
   editingId.value = null
 }
 
