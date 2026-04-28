@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 import shlex
 
 from deepagents.backends.protocol import (
@@ -15,7 +16,31 @@ from deepagents.backends.protocol import (
     WriteResult,
 )
 
+_PROTECTED_ENV_KEYS = {'PATH', 'SHELL', 'HOME', 'USER', 'LANG', 'LC_ALL'}
+_ENV_KEY_RE = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_env(env: dict | None) -> dict:
+    """过滤并校验环境变量。
+
+    - key 必须匹配 [a-zA-Z_][a-zA-Z0-9_]*
+    - 不允许覆盖系统关键变量（PATH, SHELL 等）
+    """
+    if not env:
+        return {}
+
+    safe = {}
+    for key, value in env.items():
+        if not _ENV_KEY_RE.match(key):
+            logger.warning("非法环境变量 key: %s，已忽略", key)
+            continue
+        if key in _PROTECTED_ENV_KEYS:
+            logger.warning("保护变量 %s 不允许覆盖，已忽略", key)
+            continue
+        safe[key] = str(value)
+    return safe
 
 
 class BaseSandboxBackend(SandboxBackendProtocol):
