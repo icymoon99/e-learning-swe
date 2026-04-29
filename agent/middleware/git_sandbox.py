@@ -142,6 +142,13 @@ class GitSandboxMiddleware(AgentMiddleware):
 
         try:
             self._execute_in_sandbox("git add -A")
+            has_changes = self._execute_in_sandbox(
+                "git diff --cached --quiet 2>/dev/null; echo $?"
+            ).strip() == "1"
+            if not has_changes:
+                logger.info("GitSandboxMiddleware: 无文件变更，跳过提交")
+                return None
+
             self._execute_in_sandbox(
                 f'git commit -m "{commit_msg}"'
             )
