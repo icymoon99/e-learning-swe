@@ -56,8 +56,13 @@ class Orchestrator:
     def _build_agent(self, agent_id: str, task_id: str = "", thread_id: str = "") -> Any:
         """根据 Agent 配置创建 deep agent 实例"""
         agent_config = ElAgent.objects.get(id=agent_id)
+        logger.info(
+            "开始构建 Agent: code=%s, id=%s, task_id=%s, thread_id=%s",
+            agent_config.code, agent_id, task_id or "none", thread_id or "none",
+        )
 
         if not agent_config.llm_model:
+            logger.error("Agent %s 未配置 LLM 模型", agent_config.code)
             raise ValueError(f"Agent {agent_config.code} 未配置 LLM 模型")
 
         llm_model = agent_config.llm_model
@@ -71,6 +76,7 @@ class Orchestrator:
         checkpointer = MemorySaver()
 
         backend = resolve_backend(agent_config, thread_id=thread_id)
+        logger.info("沙箱后端已初始化: backend=%s, work_dir=%s", type(backend).__name__, getattr(backend, "_work_dir", "N/A"))
 
         # 追加 Git 工作约束到 system_prompt
         system_prompt = agent_config.system_prompt + GIT_SYSTEM_PROMPT_SUFFIX
@@ -79,6 +85,7 @@ class Orchestrator:
         middleware_list = [GitSandboxMiddleware(backend=backend)]
         if task_id:
             middleware_list.insert(0, TaskMemoryMiddleware(task_id=task_id, agent_code=agent_config.code))
+            logger.info("TaskMemoryMiddleware 已加载: task_id=%s", task_id)
 
         # 构建 tools 列表
         tools = []
@@ -93,10 +100,16 @@ class Orchestrator:
                     env_vars=env_vars,
                 )
                 tools.append(tool)
+                logger.info("CLI 执行器已加载: code=%s", executor.code)
             except KeyError:
                 logger.warning(
-                    "CLI 执行器未注册: %s，跳过", executor.code
+                    "CLI 执行器未注册: code=%s，跳过", executor.code
                 )
+        else:
+            if executor and not executor.enabled:
+                logger.info("执行器 %s 已禁用，跳过加载", executor.code)
+            else:
+                logger.info("未配置执行器，Agent 仅使用文件系统工具")
 
         agent = create_deep_agent(
             model=llm,
@@ -152,6 +165,11 @@ class Orchestrator:
         agent = self.get_or_create_agent(agent_id, task_id=task_id, thread_id=thread_id)
         agent_config = ElAgent.objects.get(id=agent_id)
 
+        logger.info(
+            "开始执行 Agent 任务: agent=%s, thread=%s, task_id=%s",
+            agent_config.code, thread_id, task_id or "none",
+        )
+
         log = ElAgentExecutionLog.objects.create(
             agent_id=agent_id,
             thread_id=thread_id,
@@ -177,6 +195,9 @@ class Orchestrator:
                     git_platform=git_platform,
                     git_token=git_token,
                 )
+                logger.info("Git 上下文已配置: repo=%s, branch=%s", git_repo_url, task_branch)
+
+            logger.info("Agent stream 开始执行")
 
             for chunk in agent.stream(
                 {"messages": [{"role": "user", "content": message}]},
@@ -193,11 +214,13 @@ class Orchestrator:
 
                 if isinstance(chunk, dict) and "final_result" in chunk.get("type", ""):
                     result_data = chunk.get("data")
+                    logger.info("Agent 已生成最终结果")
 
             if result_data is None and events:
                 last_event = events[-1]
                 if isinstance(last_event, dict):
                     result_data = last_event
+                    logger.info("使用最后一条事件作为结果")
 
             log.status = "completed"
             log.result = result_data
