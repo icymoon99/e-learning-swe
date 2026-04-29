@@ -155,6 +155,36 @@ class TestLocalSystemBackend(unittest.TestCase):
         shutil.rmtree(work_dir, ignore_errors=True)
 
 
+class TestPathResolution(unittest.TestCase):
+    """测试 _resolve_path 的虚拟路径转换行为"""
+
+    def test_base_resolve_strips_leading_slash(self):
+        """BaseSandboxBackend._resolve_path 应去掉前导 /"""
+        backend = LocalDockerBackend(container_name="test", work_dir="workspace")
+        resolved = backend._resolve_path("/src/main.py")
+        self.assertEqual(resolved, "src/main.py")
+
+    def test_local_docker_resolve_root(self):
+        """根路径 / 应解析为 ."""
+        backend = LocalDockerBackend(container_name="test", work_dir="workspace")
+        resolved = backend._resolve_path("/")
+        self.assertEqual(resolved, ".")
+
+    def test_local_docker_resolve_subpath(self):
+        """子路径 /src/main.py 应解析为相对于 work_dir 的路径"""
+        backend = LocalDockerBackend(
+            container_name="test", work_dir="workspace"
+        )
+        resolved = backend._resolve_path("/src/main.py")
+        self.assertEqual(resolved, "src/main.py")
+
+    def test_resolve_empty_path(self):
+        """空路径或只有 / 应返回 ."""
+        backend = LocalDockerBackend(container_name="test", work_dir="workspace")
+        self.assertEqual(backend._resolve_path("/"), ".")
+        self.assertEqual(backend._resolve_path(""), ".")
+
+
 class TestBackendFactory(unittest.TestCase):
     def test_create_local_system_from_factory(self):
         instance = ElSandboxInstance(

@@ -69,6 +69,22 @@ class BaseSandboxBackend(SandboxBackendProtocol):
     # 路径校验
     # =========================================================================
 
+    def _resolve_path(self, file_path: str) -> str:
+        """将 deepagents 虚拟绝对路径转换为沙箱工作目录下的相对路径。
+
+        deepagents 的 FilesystemMiddleware 通过 validate_path() 将所有路径
+        规范化为以 / 开头的虚拟绝对路径（如 /src/main.py）。/ 对应沙箱的 work_dir。
+        此方法去掉前导 /，返回相对于 work_dir 的路径。
+
+        Args:
+            file_path: 虚拟绝对路径，如 /src/main.py 或 /
+
+        Returns:
+            相对于 work_dir 的路径，如 src/main.py 或 .
+        """
+        path = file_path.lstrip("/")
+        return path if path else "."
+
     def _validate_path(self, file_path: str) -> str:
         """校验文件路径必须在 work_dir 范围内，防止路径遍历攻击。"""
         if hasattr(self, "_work_dir"):
@@ -87,17 +103,17 @@ class BaseSandboxBackend(SandboxBackendProtocol):
 
     def _read_raw(self, file_path: str) -> str:
         """读取文件原始内容（无行号）"""
-        escaped = shlex.quote(file_path)
-        cmd = self._build_cmd(f"cat {escaped} 2>&1")
+        resolved = self._resolve_path(file_path)
+        cmd = self._build_cmd(f"cat {shlex.quote(resolved)} 2>&1")
         result = self.execute(cmd)
         if result.exit_code != 0:
             return f"Error: {result.output}"
         return result.output
 
     def read(self, file_path: str, offset: int = 0, limit: int = 2000) -> str:
-        escaped = shlex.quote(file_path)
+        resolved = self._resolve_path(file_path)
         cmd = self._build_cmd(
-            f"cat -n {escaped} 2>&1 | tail -n +$(({offset} + 1)) | head -n {limit}"
+            f"cat -n {shlex.quote(resolved)} 2>&1 | tail -n +$(({offset} + 1)) | head -n {limit}"
         )
         result = self.execute(cmd)
         if result.exit_code != 0:
@@ -110,13 +126,13 @@ class BaseSandboxBackend(SandboxBackendProtocol):
 
     def write(self, file_path: str, content: str) -> WriteResult:
         try:
-            dir_path = os.path.dirname(file_path)
+            resolved = self._resolve_path(file_path)
+            dir_path = os.path.dirname(resolved)
             if dir_path:
                 mkdir_cmd = self._build_cmd(f"mkdir -p {shlex.quote(dir_path)}")
                 self.execute(mkdir_cmd)
 
-            escaped_path = shlex.quote(file_path)
-            cmd = self._build_cmd(f"cat > {escaped_path} << 'SANDBOX_EOF'\n{content}\nSANDBOX_EOF")
+            cmd = self._build_cmd(f"cat > {shlex.quote(resolved)} << 'SANDBOX_EOF'\n{content}\nSANDBOX_EOF")
             self.execute(cmd)
             return WriteResult(path=file_path, files_update=None)
         except Exception as e:
@@ -162,8 +178,8 @@ class BaseSandboxBackend(SandboxBackendProtocol):
     # =========================================================================
 
     def ls(self, path: str) -> dict:
-        escaped = shlex.quote(path)
-        cmd = self._build_cmd(f"ls -la {escaped} 2>&1")
+        resolved = self._resolve_path(path)
+        cmd = self._build_cmd(f"ls -la {shlex.quote(resolved)} 2>&1")
         result = self.execute(cmd)
         if result.exit_code != 0:
             return {"error": result.output}
@@ -182,8 +198,8 @@ class BaseSandboxBackend(SandboxBackendProtocol):
         return {"entries": entries}
 
     def ls_info(self, path: str) -> list[FileInfo]:
-        escaped = shlex.quote(path)
-        cmd = self._build_cmd(f"ls -la {escaped} 2>&1")
+        resolved = self._resolve_path(path)
+        cmd = self._build_cmd(f"ls -la {shlex.quote(resolved)} 2>&1")
         result = self.execute(cmd)
         if result.exit_code != 0:
             return []
@@ -194,8 +210,11 @@ class BaseSandboxBackend(SandboxBackendProtocol):
             if len(parts) >= 9:
                 name = parts[8]
                 is_dir = parts[0].startswith("d")
+                virtual_path = posixpath.normpath(
+                    f"/{posixpath.basename(resolved)}/{name}"
+                ) if resolved != "." else f"/{name}"
                 entries.append({
-                    "path": os.path.join(path, name),
+                    "path": virtual_path,
                     "is_dir": is_dir,
                     "size": int(parts[4]) if parts[4].isdigit() else 0,
                     "modified_at": " ".join(parts[5:8]),
@@ -207,9 +226,9 @@ class BaseSandboxBackend(SandboxBackendProtocol):
     # =========================================================================
 
     def glob(self, pattern: str, path: str = "/") -> dict:
-        escaped_path = shlex.quote(path)
+        resolved = self._resolve_path(path)
         cmd = self._build_cmd(
-            f"find {escaped_path} -name {shlex.quote(pattern)} 2>&1 | head -100"
+            f"find {shlex.quote(resolved)} -name {shlex.quote(pattern)} 2>&1 | head -100"
         )
         result = self.execute(cmd)
         if result.exit_code != 0:
@@ -218,9 +237,9 @@ class BaseSandboxBackend(SandboxBackendProtocol):
         return {"matches": matches}
 
     def glob_info(self, pattern: str, path: str = "/") -> list[FileInfo]:
-        escaped_path = shlex.quote(path)
+        resolved = self._resolve_path(path)
         cmd = self._build_cmd(
-            f"find {escaped_path} -name {shlex.quote(pattern)} 2>&1 | head -100"
+            f"find {shlex.quote(resolved)} -name {shlex.quote(pattern)} 2>&1 | head -100"
         )
         result = self.execute(cmd)
         if result.exit_code != 0:
@@ -228,8 +247,9 @@ class BaseSandboxBackend(SandboxBackendProtocol):
         entries = []
         for line in result.output.strip().split("\n"):
             if line:
+                virtual = "/" + line[len(resolved):].lstrip("/") if line.startswith(resolved) else "/" + line
                 entries.append({
-                    "path": line,
+                    "path": virtual,
                     "is_dir": False,
                     "size": 0,
                     "modified_at": "",
@@ -243,12 +263,12 @@ class BaseSandboxBackend(SandboxBackendProtocol):
     def grep(
         self, pattern: str, path: str | None = None, glob: str | None = None
     ) -> dict:
-        search_path = shlex.quote(path) if path else "."
+        resolved = self._resolve_path(path) if path else "."
         grep_cmd = "grep -rn"
         if glob:
             grep_cmd += f" --include={shlex.quote(glob)}"
         cmd = self._build_cmd(
-            f"{grep_cmd} {shlex.quote(pattern)} {search_path} 2>&1 | head -100"
+            f"{grep_cmd} {shlex.quote(pattern)} {shlex.quote(resolved)} 2>&1 | head -100"
         )
         result = self.execute(cmd)
         if result.exit_code not in (0, 1):  # 1 = 无匹配
@@ -258,8 +278,13 @@ class BaseSandboxBackend(SandboxBackendProtocol):
             if line and ":" in line:
                 parts = line.split(":", 2)
                 if len(parts) >= 3:
+                    file_path = parts[0]
+                    if file_path.startswith(resolved):
+                        file_path = "/" + file_path[len(resolved):].lstrip("/")
+                    else:
+                        file_path = "/" + file_path
                     matches.append({
-                        "path": parts[0],
+                        "path": file_path,
                         "line": int(parts[1]) if parts[1].isdigit() else 0,
                         "content": parts[2],
                     })
@@ -268,11 +293,11 @@ class BaseSandboxBackend(SandboxBackendProtocol):
     def grep_raw(
         self, pattern: str, path: str | None = None, glob: str | None = None
     ) -> list[GrepMatch] | str:
-        search_path = shlex.quote(path) if path else "."
+        resolved = self._resolve_path(path) if path else "."
         grep_opts = "-rHnF"
         glob_opt = f"--include='{glob}'" if glob else ""
         cmd = self._build_cmd(
-            f"grep {grep_opts} {glob_opt} -e {shlex.quote(pattern)} {search_path} 2>/dev/null || true"
+            f"grep {grep_opts} {glob_opt} -e {shlex.quote(pattern)} {shlex.quote(resolved)} 2>/dev/null || true"
         )
         result = self.execute(cmd)
         output = result.output.strip()
@@ -282,8 +307,13 @@ class BaseSandboxBackend(SandboxBackendProtocol):
         for line in output.split("\n"):
             parts = line.split(":", 2)
             if len(parts) >= 3:
+                file_path = parts[0]
+                if file_path.startswith(resolved):
+                    file_path = "/" + file_path[len(resolved):].lstrip("/")
+                else:
+                    file_path = "/" + file_path
                 matches.append({
-                    "path": parts[0],
+                    "path": file_path,
                     "line": int(parts[1]),
                     "text": parts[2],
                 })
@@ -308,7 +338,8 @@ class BaseSandboxBackend(SandboxBackendProtocol):
     def download_files(self, paths: list[str]) -> list[FileDownloadResponse]:
         responses = []
         for path in paths:
-            content = self._read_raw(path)
+            resolved = self._resolve_path(path)
+            content = self._read_raw(resolved)
             if content.startswith("Error"):
                 responses.append(
                     FileDownloadResponse(
