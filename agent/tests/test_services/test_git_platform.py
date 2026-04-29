@@ -191,6 +191,36 @@ class TestGitLabPlatform:
         assert result["number"] == 5
         call_kwargs = mock_post.call_args[1]
         assert call_kwargs["headers"]["PRIVATE-TOKEN"] == "gl_token"
+        # 默认 API base 应为 gitlab.com
+        call_args = mock_post.call_args
+        assert "https://gitlab.com/api/v4/projects/123/merge_requests" in call_args[0][0]
+
+    @patch("agent.services.git_platform.requests.post")
+    def test_create_mr_self_hosted(self, mock_post):
+        """自托管 GitLab 应使用正确的 API base URL"""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 201
+        mock_resp.json.return_value = {
+            "web_url": "http://192.168.1.38/group/repo/-/merge_requests/1",
+            "iid": 1,
+        }
+        mock_post.return_value = mock_resp
+
+        platform = GitLabPlatform(
+            token="gl_token",
+            project_id="oio-smart%2Foio_smart_resource_mcp",
+            api_base="http://192.168.1.38",
+        )
+        result = platform.create_pr(PRRequest(
+            title="Test",
+            description="Desc",
+            source_branch="work",
+            target_branch="dev",
+        ))
+
+        assert result is not None
+        call_args = mock_post.call_args
+        assert "http://192.168.1.38/api/v4/projects/" in call_args[0][0]
 
     @patch("agent.services.git_platform.requests.post")
     def test_create_mr_failure(self, mock_post):
@@ -224,6 +254,14 @@ class TestGetPlatform:
     def test_returns_gitlab(self):
         p = get_platform("gitlab", "tok", "https://gitlab.com/o/r.git")
         assert isinstance(p, GitLabPlatform)
+        assert p.api_base == "https://gitlab.com"
+
+    def test_returns_gitlab_self_hosted(self):
+        """自托管 GitLab 应使用正确的 API base"""
+        p = get_platform("gitlab", "tok", "http://192.168.1.38/oio-smart/repo.git")
+        assert isinstance(p, GitLabPlatform)
+        assert p.api_base == "http://192.168.1.38"
+        assert p.project_id == "oio-smart%2Frepo"
 
     def test_unknown_platform_raises(self):
         with pytest.raises(ValueError, match="Unsupported platform"):

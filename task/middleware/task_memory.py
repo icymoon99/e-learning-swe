@@ -34,6 +34,7 @@ class TaskMemoryMiddleware(AgentMiddleware):
         from agent.models import ElAgent
 
         self.task_id = task_id
+        self._agent_code = agent_code  # 保存供 after_agent 使用
         self.summarizer = MemorySummarizer()
 
         # 根据 agent_code 获取 LLM 模型
@@ -84,11 +85,7 @@ class TaskMemoryMiddleware(AgentMiddleware):
         self, state: dict, runtime: Runtime, *, success: bool = True
     ) -> dict[str, Any] | None:
         """解析 Agent 输出，保存本次执行结果到 ElTaskMemory。"""
-        agent_code = (
-            runtime.config.configurable.get("agent_code", "unknown")
-            if hasattr(runtime, "config") and runtime.config
-            else "unknown"
-        )
+        agent_code = self._agent_code or "unknown"
 
         # 获取 Agent 实例（用于记录）
         agent = None

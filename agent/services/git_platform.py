@@ -126,12 +126,13 @@ class GiteePlatform(GitPlatform):
 class GitLabPlatform(GitPlatform):
     """GitLab MR 创建"""
 
-    def __init__(self, token: str, project_id: str) -> None:
+    def __init__(self, token: str, project_id: str, api_base: str = "https://gitlab.com") -> None:
         self.token = token
         self.project_id = project_id
+        self.api_base = api_base.rstrip("/")
 
     def create_pr(self, req: PRRequest) -> dict | None:
-        url = f"https://gitlab.com/api/v4/projects/{self.project_id}/merge_requests"
+        url = f"{self.api_base}/api/v4/projects/{self.project_id}/merge_requests"
         headers = {"PRIVATE-TOKEN": self.token}
         data = {
             "title": req.title,
@@ -162,8 +163,10 @@ def get_platform(platform: str, token: str, repo_url: str) -> GitPlatform:
     elif platform == "gitee":
         return GiteePlatform(token=token, owner=owner, repo=repo)
     elif platform == "gitlab":
+        parsed = urlparse(repo_url)
+        api_base = f"{parsed.scheme}://{parsed.netloc}"
         project_id = owner.replace("/", "%2F") + "%2F" + repo
-        return GitLabPlatform(token=token, project_id=project_id)
+        return GitLabPlatform(token=token, project_id=project_id, api_base=api_base)
     else:
         raise ValueError(f"Unsupported platform: {platform}")
 
