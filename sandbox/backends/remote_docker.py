@@ -31,9 +31,9 @@ class RemoteDockerBackend(BaseSandboxBackend):
         return self._container_name
 
     def _build_cmd(self, inner_cmd: str) -> str:
-        wd = shlex.quote(self._work_dir)
+        wd = shlex.quote(f"/{self._work_dir}")
         escaped_inner = shlex.quote(f"mkdir -p {wd} && cd {wd} && {inner_cmd}")
-        return f"docker exec {self._container_name} bash -c {escaped_inner}"
+        return f"docker exec -w / {self._container_name} bash -c {escaped_inner}"
 
     def execute(
         self, command: str, *, timeout: int | None = None, env: dict | None = None
@@ -55,9 +55,9 @@ class RemoteDockerBackend(BaseSandboxBackend):
         for key, value in safe_env.items():
             env_args += f" -e {shlex.quote(key)}={shlex.quote(value)}"
 
-        wd = shlex.quote(self._work_dir)
+        wd = shlex.quote(f"/{self._work_dir}")
         escaped_inner = shlex.quote(f"mkdir -p {wd} && cd {wd} && {inner_cmd}")
-        return f"docker exec{env_args} {self._container_name} bash -c {escaped_inner}"
+        return f"docker exec{env_args} -w / {self._container_name} bash -c {escaped_inner}"
 
     def _remote_shell(self, cmd: str, timeout: int = 300) -> None:
         """在远程服务器上执行 shell 命令（非 docker exec）"""

@@ -30,8 +30,9 @@ class LocalDockerBackend(BaseSandboxBackend):
         return self._container_name
 
     def _build_cmd(self, inner_cmd: str) -> str:
-        wd = shlex.quote(self._work_dir)
-        return f"docker exec {self._container_name} bash -c {shlex.quote(f'mkdir -p {wd} && cd {wd} && {inner_cmd}')}"
+        # -w / 覆盖容器默认 workdir，避免 chdir 失败；work_dir 用绝对路径确保创建位置正确
+        wd = shlex.quote(f"/{self._work_dir}")
+        return f"docker exec -w / {self._container_name} bash -c {shlex.quote(f'mkdir -p {wd} && cd {wd} && {inner_cmd}')}"
 
     def execute(
         self, command: str, *, timeout: int | None = None, env: dict | None = None
@@ -53,8 +54,8 @@ class LocalDockerBackend(BaseSandboxBackend):
         for key, value in safe_env.items():
             env_args += f" -e {shlex.quote(key)}={shlex.quote(value)}"
 
-        wd = shlex.quote(self._work_dir)
-        return f"docker exec{env_args} {self._container_name} bash -c {shlex.quote(f'mkdir -p {wd} && cd {wd} && {inner_cmd}')}"
+        wd = shlex.quote(f"/{self._work_dir}")
+        return f"docker exec{env_args} -w / {self._container_name} bash -c {shlex.quote(f'mkdir -p {wd} && cd {wd} && {inner_cmd}')}"
 
     def ensure_container(self) -> None:
         """确保容器存在"""
