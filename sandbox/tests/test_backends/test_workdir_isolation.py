@@ -76,6 +76,68 @@ class TestGetBackendThreadIsolation:
         assert backend._work_dir == "workspace-thread-002"
 
 
+class TestLocalSystemBackendRootPath:
+    """测试 LocalSystemBackend 的 root_path + work_dir 路径拼接"""
+
+    def test_build_cmd_joins_root_path_and_work_dir(self):
+        """_build_cmd 应使用 {root_path}/{work_dir} 拼接路径"""
+        from sandbox.backends.local_system import LocalSystemBackend
+
+        backend = LocalSystemBackend(
+            name="test", root_path="sandbox/", work_dir="workspace-abc123"
+        )
+        cmd = backend._build_cmd("echo hello")
+        assert "cd" in cmd
+        assert "sandbox/workspace-abc123" in cmd
+
+    def test_ensure_dir_creates_joined_path(self):
+        """ensure_dir 应创建 {root_path}/{work_dir} 目录"""
+        import tempfile
+        import os
+        import shutil
+        from sandbox.backends.local_system import LocalSystemBackend
+
+        tmp = tempfile.mkdtemp()
+        try:
+            root = os.path.join(tmp, "sandbox/")
+            backend = LocalSystemBackend(name="test", root_path=root, work_dir="workspace-test")
+            backend.ensure_dir()
+            assert os.path.isdir(os.path.join(root, "workspace-test"))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_reset_clears_only_isolated_dir(self):
+        """reset 应仅清空拼接后的隔离目录"""
+        import tempfile
+        import os
+        import shutil
+        from sandbox.backends.local_system import LocalSystemBackend
+
+        tmp = tempfile.mkdtemp()
+        try:
+            root = os.path.join(tmp, "sandbox")
+            os.makedirs(root, exist_ok=True)
+            # 在 root 下创建另一个不应被清空的文件
+            other_file = os.path.join(root, "other.txt")
+            with open(other_file, "w") as f:
+                f.write("keep me")
+
+            backend = LocalSystemBackend(name="test", root_path=root, work_dir="workspace-reset")
+            backend.ensure_dir()
+            test_file = os.path.join(root, "workspace-reset", "test.txt")
+            with open(test_file, "w") as f:
+                f.write("delete me")
+
+            backend.reset()
+
+            # 其他文件应仍然存在
+            assert os.path.exists(other_file)
+            # 隔离目录应存在但内容被清空
+            assert os.path.isdir(os.path.join(root, "workspace-reset"))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 class TestWorkDirDataMigration(TransactionTestCase):
     """测试 0003_migrate_workdir_to_relative 迁移
 

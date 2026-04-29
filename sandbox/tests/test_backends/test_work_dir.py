@@ -22,30 +22,34 @@ class TestLocalSystemBackendWorkDir(unittest.TestCase):
     """LocalSystemBackend 工作目录切换测试"""
 
     def setUp(self):
-        self.test_dir = tempfile.mkdtemp(prefix="sandbox_test_")
+        self.base_dir = tempfile.mkdtemp(prefix="sandbox_test_")
+        self.root_path = self.base_dir
+        self.work_dir = "workspace"
+        self.full_work_dir = os.path.join(self.base_dir, "workspace")
+        os.makedirs(self.full_work_dir, exist_ok=True)
         self.backend = LocalSystemBackend(
-            name="test", root_path=self.test_dir, work_dir=self.test_dir
+            name="test", root_path=self.root_path, work_dir=self.work_dir
         )
 
     def tearDown(self):
-        shutil.rmtree(self.test_dir, ignore_errors=True)
+        shutil.rmtree(self.base_dir, ignore_errors=True)
 
     def test_execute_cd_to_work_dir(self):
         """execute 应切换到 work_dir"""
         response = self.backend.execute("pwd")
         self.assertEqual(response.exit_code, 0)
-        self.assertIn(self.test_dir, response.output.strip())
+        self.assertIn(self.full_work_dir, response.output.strip())
 
     def test_rm_restricted_to_work_dir(self):
         """rm -rf * 应被限制在 work_dir 内（不会删除项目根目录文件）"""
-        test_file = os.path.join(self.test_dir, "test.txt")
+        test_file = os.path.join(self.full_work_dir, "test.txt")
         with open(test_file, "w") as f:
             f.write("data")
 
         self.backend.execute("rm -rf *")
 
         self.assertFalse(os.path.exists(test_file))
-        self.assertTrue(os.path.exists(self.test_dir))
+        self.assertTrue(os.path.exists(self.full_work_dir))
 
 
 class TestRemoteSystemBackendWorkDir(unittest.TestCase):
@@ -137,13 +141,17 @@ class TestPathTraversalProtection(unittest.TestCase):
     """路径遍历防护测试"""
 
     def setUp(self):
-        self.test_dir = tempfile.mkdtemp(prefix="sandbox_test_")
+        self.base_dir = tempfile.mkdtemp(prefix="sandbox_test_")
+        self.root_path = self.base_dir
+        self.work_dir = "workspace"
+        self.full_work_dir = os.path.join(self.base_dir, "workspace")
+        os.makedirs(self.full_work_dir, exist_ok=True)
         self.backend = LocalSystemBackend(
-            name="test", root_path=self.test_dir, work_dir=self.test_dir
+            name="test", root_path=self.root_path, work_dir=self.work_dir
         )
 
     def tearDown(self):
-        shutil.rmtree(self.test_dir, ignore_errors=True)
+        shutil.rmtree(self.base_dir, ignore_errors=True)
 
     def test_absolute_path_rejected(self):
         """绝对路径超出 work_dir 时应被拒绝"""
@@ -157,30 +165,30 @@ class TestPathTraversalProtection(unittest.TestCase):
 
     def test_work_dir_path_allowed(self):
         """work_dir 内的路径应被允许"""
-        result = self.backend._validate_path(f"{self.test_dir}/sub/file.txt")
+        result = self.backend._validate_path(f"{self.full_work_dir}/sub/file.txt")
         self.assertIsNotNone(result)
 
     def test_work_dir_exact_allowed(self):
         """work_dir 本身应被允许"""
-        result = self.backend._validate_path(self.test_dir)
+        result = self.backend._validate_path(self.full_work_dir)
         self.assertIsNotNone(result)
 
     def test_write_validates_path(self):
         """write 应调用 _validate_path"""
-        test_file = os.path.join(self.test_dir, "test.txt")
+        test_file = os.path.join(self.full_work_dir, "test.txt")
         result = self.backend.write(test_file, "hello")
         self.assertIsNone(result.error)
 
     def test_read_validates_path(self):
         """read 应调用 _validate_path"""
-        test_file = os.path.join(self.test_dir, "test.txt")
+        test_file = os.path.join(self.full_work_dir, "test.txt")
         self.backend.write(test_file, "hello")
         content = self.backend.read(test_file)
         self.assertIn("hello", content)
 
     def test_edit_validates_path(self):
         """edit 应调用 _validate_path"""
-        test_file = os.path.join(self.test_dir, "test.txt")
+        test_file = os.path.join(self.full_work_dir, "test.txt")
         self.backend.write(test_file, "hello world")
         result = self.backend.edit(test_file, "hello", "goodbye")
         self.assertIsNone(result.error)
@@ -189,5 +197,5 @@ class TestPathTraversalProtection(unittest.TestCase):
 
     def test_ls_validates_path(self):
         """ls 应调用 _validate_path"""
-        result = self.backend.ls(self.test_dir)
+        result = self.backend.ls(self.full_work_dir)
         self.assertIn("entries", result)
