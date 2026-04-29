@@ -10,6 +10,7 @@ import json
 import logging
 import os
 from typing import Any
+from urllib.parse import urlparse
 
 from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import AIMessage
@@ -19,6 +20,33 @@ from agent.context import GitContext
 from agent.services.git_platform import PRRequest, get_platform as _get_platform
 
 logger = logging.getLogger(__name__)
+
+
+def _build_auth_clone_url(repo_url: str, token: str, platform: str) -> str:
+    """将 Token 嵌入 HTTP(S) 仓库 URL 实现认证克隆。
+
+    GitLab: http://oauth2:{token}@host/owner/repo.git
+    GitHub: http://{token}@host/owner/repo.git
+    Gitee:  http://oauth2:{token}@gitee.com/owner/repo.git
+    """
+    if not token:
+        return repo_url
+
+    parsed = urlparse(repo_url)
+    if parsed.scheme not in ("http", "https"):
+        return repo_url
+
+    if platform == "github":
+        auth_url = f"{parsed.scheme}://{token}@{parsed.netloc}{parsed.path}"
+    elif platform == "gitlab":
+        auth_url = f"{parsed.scheme}://oauth2:{token}@{parsed.netloc}{parsed.path}"
+    elif platform == "gitee":
+        auth_url = f"{parsed.scheme}://oauth2:{token}@{parsed.netloc}{parsed.path}"
+    else:
+        # 未知平台，尝试 GitLab 格式
+        auth_url = f"{parsed.scheme}://oauth2:{token}@{parsed.netloc}{parsed.path}"
+
+    return auth_url
 
 
 class GitSandboxMiddleware(AgentMiddleware):
@@ -63,8 +91,13 @@ class GitSandboxMiddleware(AgentMiddleware):
             elif hasattr(self.backend, "ensure_container"):
                 self.backend.ensure_container()
 
+            # 构建认证 URL（嵌入 token）用于克隆
+            clone_url = _build_auth_clone_url(
+                ctx.git_repo_url, ctx.git_token, ctx.git_platform
+            )
+
             self._execute_in_sandbox("rm -rf *")
-            self._execute_in_sandbox(f"git clone {ctx.git_repo_url} .")
+            self._execute_in_sandbox(f"git clone {clone_url} .")
             self._execute_in_sandbox(
                 'git config user.name "Agent" && '
                 'git config user.email "agent@e-learning.local"'
@@ -105,13 +138,22 @@ class GitSandboxMiddleware(AgentMiddleware):
                 f'git commit -m "{commit_msg}"'
             )
 
+            # 配置 push 时的认证 URL
+            token = ctx.git_token or os.environ.get(ctx.git_token_secret, "")
+            if token:
+                auth_url = _build_auth_clone_url(
+                    ctx.git_repo_url, token, ctx.git_platform
+                )
+                self._execute_in_sandbox(
+                    f"git remote set-url origin {auth_url}"
+                )
+
             # push
             self._execute_in_sandbox(
                 f"git push origin {work_branch}"
             )
 
             # 创建 PR（宿主机 REST API）
-            token = os.environ.get(ctx.git_token_secret, "")
             if token:
                 platform = _get_platform(
                     ctx.git_platform, token, ctx.git_repo_url
@@ -139,8 +181,7 @@ class GitSandboxMiddleware(AgentMiddleware):
                     logger.warning("GitSandboxMiddleware: PR 创建失败")
             else:
                 logger.warning(
-                    "GitSandboxMiddleware: 未找到 Git Token (env key: %s)",
-                    ctx.git_token_secret,
+                    "GitSandboxMiddleware: 未找到 Git Token"
                 )
 
         except Exception as e:

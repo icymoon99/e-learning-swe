@@ -13,6 +13,7 @@ def execute_task_conversation(
     agent_code: str,
     task_id: str,
     execution_log_id: str,
+    git_token: str = "",
 ) -> None:
     """异步执行任务指令
 
@@ -21,6 +22,7 @@ def execute_task_conversation(
         agent_code: Agent 编码
         task_id: ElTask ULID
         execution_log_id: ElAgentExecutionLog ULID
+        git_token: Git Token 实际值（从 ElGitSource.token 获取）
     """
     from task.models import ElTaskConversation, ElTask
     from agent.models import ElAgent, ElAgentExecutionLog
@@ -61,6 +63,7 @@ def execute_task_conversation(
                 if task.git_source
                 else ""
             ),
+            git_token=git_token,
             task_id=task_id,
         )
 

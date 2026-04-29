@@ -85,12 +85,19 @@ class ConversationViewSet(viewsets.GenericViewSet):
 
         # 6. 异步执行
         from django_q.tasks import async_task
+
+        # 从仓库源获取 Token 实际值
+        git_token = ""
+        if task.git_source:
+            git_token = task.git_source.token
+
         async_task(
             "task.tasks.execute_task_conversation",
             str(conv.id),
             agent_code,
             str(task.id),
             str(execution_log.id),
+            git_token,
         )
 
         result_serializer = ConversationSerializer(conv)
