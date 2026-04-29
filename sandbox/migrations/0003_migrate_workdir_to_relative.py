@@ -2,7 +2,7 @@
 
 from django.db import migrations
 
-from sandbox.migrations.migrate_workdir import migrate_absolute_to_relative
+from sandbox.migrations._workdir_utils import migrate_absolute_to_relative
 
 
 def _run_migration(apps, schema_editor):

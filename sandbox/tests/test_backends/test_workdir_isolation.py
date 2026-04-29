@@ -2,7 +2,7 @@
 
 from django.test import TransactionTestCase
 from sandbox.models import ElSandboxInstance
-from sandbox.migrations.migrate_workdir import migrate_absolute_to_relative
+from sandbox.migrations._workdir_utils import migrate_absolute_to_relative
 from sandbox.backends import get_backend
 
 

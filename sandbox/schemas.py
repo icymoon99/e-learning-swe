@@ -14,8 +14,8 @@ SANDBOX_TYPE_SCHEMAS = {
             },
             "work_dir": {
                 "type": "string", "required": True,
-                "default": "/workspace",
-                "label": "工作目录", "hint": "容器内的工作目录路径",
+                "default": "workspace",
+                "label": "工作目录", "hint": "相对于镜像 WORKDIR 的目录名称，禁止绝对路径",
             },
         },
     },
@@ -29,8 +29,8 @@ SANDBOX_TYPE_SCHEMAS = {
             },
             "work_dir": {
                 "type": "string", "required": True,
-                "default": "/workspace",
-                "label": "工作目录", "hint": "容器内的工作目录路径",
+                "default": "workspace",
+                "label": "工作目录", "hint": "相对于镜像 WORKDIR 的目录名称，禁止绝对路径",
             },
             "ssh_host": {
                 "type": "string", "required": True,
@@ -61,13 +61,14 @@ SANDBOX_TYPE_SCHEMAS = {
         "fields": {
             "root_path": {
                 "type": "string", "required": True,
-                "default": "/tmp/",
-                "label": "沙箱根目录", "hint": "沙箱文件系统的隔离根目录",
+                "default": "sandbox/",
+                "label": "沙箱根目录",
+                "hint": "相对于 CMD 工作目录的路径，禁止使用 / 开头的绝对路径",
             },
             "work_dir": {
                 "type": "string", "required": True,
-                "default": "/workspace",
-                "label": "工作目录", "hint": "Agent 执行命令的实际工作目录",
+                "default": "workspace",
+                "label": "工作目录", "hint": "root_path 下的子目录，禁止绝对路径",
             },
         },
     },
@@ -76,13 +77,14 @@ SANDBOX_TYPE_SCHEMAS = {
         "fields": {
             "root_path": {
                 "type": "string", "required": True,
-                "default": "/tmp/",
-                "label": "沙箱根目录", "hint": "沙箱文件系统的隔离根目录",
+                "default": "sandbox/",
+                "label": "沙箱根目录",
+                "hint": "相对于 CMD 工作目录的路径，禁止使用 / 开头的绝对路径",
             },
             "work_dir": {
                 "type": "string", "required": True,
-                "default": "/workspace",
-                "label": "工作目录", "hint": "Agent 执行命令的实际工作目录",
+                "default": "workspace",
+                "label": "工作目录", "hint": "root_path 下的子目录，禁止绝对路径",
             },
             "ssh_host": {
                 "type": "string", "required": True,

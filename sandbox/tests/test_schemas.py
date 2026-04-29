@@ -25,8 +25,8 @@ class TestSandboxTypeSchemas(TestCase):
         schema = get_type_schema("localsystem")
         self.assertIn("root_path", schema["fields"])
         self.assertIn("work_dir", schema["fields"])
-        self.assertEqual(schema["fields"]["root_path"]["default"], "/tmp/")
-        self.assertEqual(schema["fields"]["work_dir"]["default"], "/workspace")
+        self.assertEqual(schema["fields"]["root_path"]["default"], "sandbox/")
+        self.assertEqual(schema["fields"]["work_dir"]["default"], "workspace")
 
     def test_remotesystem_schema(self):
         """remotesystem 包含 root_path、work_dir 和 SSH 字段"""
