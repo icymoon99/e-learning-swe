@@ -73,13 +73,14 @@ class TestOrchestratorGitIntegration(TestCase):
             )
 
         self.assertEqual(result["status"], "completed")
-        # 验证 stream 被调用且 config 包含 context
+        # 验证 stream 被调用且 context 作为独立参数传入
         call_args = mock_agent.stream.call_args
         config = call_args[1]["config"]
-        self.assertIn("context", config)
-        self.assertIsInstance(config["context"], GitContext)
-        self.assertEqual(config["context"].task_branch, "feature/auth")
-        self.assertEqual(config["context"].git_repo_url, "https://github.com/owner/repo.git")
+        context = call_args[1].get("context")
+        self.assertIn("agent_code", config.get("configurable", {}))
+        self.assertIsInstance(context, GitContext)
+        self.assertEqual(context.task_branch, "feature/auth")
+        self.assertEqual(context.git_repo_url, "https://github.com/owner/repo.git")
 
     def test_execute_with_git_logs_pr_info(self):
         """Git 工作流完成时，PR 信息应写入执行日志"""
