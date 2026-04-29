@@ -150,6 +150,7 @@ class Orchestrator:
             }
         """
         agent = self.get_or_create_agent(agent_id, task_id=task_id, thread_id=thread_id)
+        agent_config = ElAgent.objects.get(id=agent_id)
 
         log = ElAgentExecutionLog.objects.create(
             agent_id=agent_id,
@@ -163,7 +164,7 @@ class Orchestrator:
 
         try:
             config: dict[str, Any] = {
-                "configurable": {"thread_id": thread_id, "agent_code": agent_code},
+                "configurable": {"thread_id": thread_id, "agent_code": agent_code or agent_config.code},
             }
 
             # 传递任务级 Git 配置
