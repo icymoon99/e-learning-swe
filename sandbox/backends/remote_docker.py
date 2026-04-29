@@ -19,7 +19,7 @@ class RemoteDockerBackend(BaseSandboxBackend):
         container_name: str,
         ssh_config: SSHConfig,
         image: str = "sandbox:latest",
-        work_dir: str = "/workspace",
+        work_dir: str = "workspace",
     ):
         self._container_name = container_name
         self._ssh_config = ssh_config
@@ -31,7 +31,8 @@ class RemoteDockerBackend(BaseSandboxBackend):
         return self._container_name
 
     def _build_cmd(self, inner_cmd: str) -> str:
-        escaped_inner = shlex.quote(f"cd {shlex.quote(self._work_dir)} && {inner_cmd}")
+        wd = shlex.quote(self._work_dir)
+        escaped_inner = shlex.quote(f"mkdir -p {wd} && cd {wd} && {inner_cmd}")
         return f"docker exec {self._container_name} bash -c {escaped_inner}"
 
     def execute(
@@ -54,7 +55,8 @@ class RemoteDockerBackend(BaseSandboxBackend):
         for key, value in safe_env.items():
             env_args += f" -e {shlex.quote(key)}={shlex.quote(value)}"
 
-        escaped_inner = shlex.quote(f"cd {shlex.quote(self._work_dir)} && {inner_cmd}")
+        wd = shlex.quote(self._work_dir)
+        escaped_inner = shlex.quote(f"mkdir -p {wd} && cd {wd} && {inner_cmd}")
         return f"docker exec{env_args} {self._container_name} bash -c {escaped_inner}"
 
     def _remote_shell(self, cmd: str, timeout: int = 300) -> None:
@@ -70,7 +72,7 @@ class RemoteDockerBackend(BaseSandboxBackend):
         else:
             docker_run = (
                 f"docker run -d --name {self._container_name} --rm "
-                f"-w {self._work_dir} {shlex.quote(self._image)} tail -f /dev/null"
+                f"{shlex.quote(self._image)} tail -f /dev/null"
             )
             result = execute_remote(docker_run, self._ssh_config, timeout=30)
             if result.exit_code != 0:
@@ -79,8 +81,10 @@ class RemoteDockerBackend(BaseSandboxBackend):
                 )
 
     def reset(self) -> None:
+        """清空工作目录"""
+        wd = shlex.quote(self._work_dir)
         cmd = self._build_cmd(
-            f"rm -rf {self._work_dir}/* {self._work_dir}/.* 2>/dev/null; mkdir -p {self._work_dir}"
+            f"rm -rf {wd}/* {wd}/.* 2>/dev/null; mkdir -p {wd}"
         )
         self.execute(cmd)
 
@@ -89,8 +93,11 @@ class RemoteDockerBackend(BaseSandboxBackend):
         repo_url: str,
         token: str = "",
         branch: str = "",
-        target_path: str = "/workspace",
+        target_path: str = "",
     ) -> None:
+        """克隆代码库"""
+        if not target_path:
+            target_path = self._work_dir
         if branch:
             cmd = f"git clone --branch {shlex.quote(branch)} --single-branch {shlex.quote(repo_url)} {shlex.quote(target_path)}"
         else:
@@ -101,10 +108,11 @@ class RemoteDockerBackend(BaseSandboxBackend):
             raise RuntimeError(f"git clone failed: {result.stderr}")
 
     def checkout_branch(self, branch_name: str, create: bool = False) -> None:
+        """检出分支"""
         if create:
-            cmd = f"git -C {self._work_dir} checkout -b {shlex.quote(branch_name)}"
+            cmd = f"git -C {shlex.quote(self._work_dir)} checkout -b {shlex.quote(branch_name)}"
         else:
-            cmd = f"git -C {self._work_dir} checkout {shlex.quote(branch_name)}"
+            cmd = f"git -C {shlex.quote(self._work_dir)} checkout {shlex.quote(branch_name)}"
         exec_cmd = self._build_cmd(cmd)
         result = execute_remote(exec_cmd, self._ssh_config)
         if result.exit_code != 0:

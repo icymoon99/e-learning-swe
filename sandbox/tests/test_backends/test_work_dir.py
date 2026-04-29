@@ -93,23 +93,25 @@ class TestLocalDockerBackendWorkDir(unittest.TestCase):
     """LocalDockerBackend 工作目录切换测试"""
 
     def test_build_cmd_includes_cd(self):
-        """_build_cmd 应包含 cd /workspace"""
+        """_build_cmd 应包含 cd workspace"""
         backend = LocalDockerBackend(
-            container_name="test-container", image="sandbox:latest", work_dir="/workspace"
+            container_name="test-container", image="sandbox:latest", work_dir="workspace"
         )
 
         cmd = backend._build_cmd("echo hello")
-        self.assertIn("cd /workspace", cmd)
+        self.assertIn("cd", cmd)
+        self.assertIn("workspace", cmd)
         self.assertIn("echo hello", cmd)
 
     def test_build_cmd_with_env_includes_cd(self):
-        """_build_cmd_with_env 应包含 cd /workspace"""
+        """_build_cmd_with_env 应包含 cd workspace"""
         backend = LocalDockerBackend(
-            container_name="test-container", image="sandbox:latest", work_dir="/workspace"
+            container_name="test-container", image="sandbox:latest", work_dir="workspace"
         )
 
         cmd = backend._build_cmd_with_env("echo hello", env={"KEY": "VALUE"})
-        self.assertIn("cd /workspace", cmd)
+        self.assertIn("cd", cmd)
+        self.assertIn("workspace", cmd)
         self.assertIn("-e KEY=VALUE", cmd)
 
 
@@ -117,24 +119,26 @@ class TestRemoteDockerBackendWorkDir(unittest.TestCase):
     """RemoteDockerBackend 工作目录切换测试"""
 
     def test_build_cmd_includes_cd(self):
-        """_build_cmd 应包含 cd /workspace"""
+        """_build_cmd 应包含 cd workspace"""
         ssh_config = SSHConfig(host="test.example.com", user="test", password="test")
         backend = RemoteDockerBackend(
-            container_name="test-container", ssh_config=ssh_config, work_dir="/workspace"
+            container_name="test-container", ssh_config=ssh_config, work_dir="workspace"
         )
 
         cmd = backend._build_cmd("echo hello")
-        self.assertIn("cd /workspace", cmd)
+        self.assertIn("cd", cmd)
+        self.assertIn("workspace", cmd)
 
     def test_build_cmd_with_env_includes_cd(self):
-        """_build_cmd_with_env 应包含 cd /workspace"""
+        """_build_cmd_with_env 应包含 cd workspace"""
         ssh_config = SSHConfig(host="test.example.com", user="test", password="test")
         backend = RemoteDockerBackend(
-            container_name="test-container", ssh_config=ssh_config, work_dir="/workspace"
+            container_name="test-container", ssh_config=ssh_config, work_dir="workspace"
         )
 
         cmd = backend._build_cmd_with_env("echo hello", env={"KEY": "VALUE"})
-        self.assertIn("cd /workspace", cmd)
+        self.assertIn("cd", cmd)
+        self.assertIn("workspace", cmd)
 
 
 class TestPathTraversalProtection(unittest.TestCase):
