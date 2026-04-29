@@ -167,9 +167,10 @@ class Orchestrator:
                 "configurable": {"thread_id": thread_id, "agent_code": agent_code or agent_config.code},
             }
 
-            # 传递任务级 Git 配置
+            # 传递任务级 Git 配置（context 是 stream() 的独立参数，不在 config 内）
+            git_context: GitContext | None = None
             if git_repo_url:
-                config["context"] = GitContext(
+                git_context = GitContext(
                     thread_id=thread_id,
                     task_branch=task_branch,
                     git_repo_url=git_repo_url,
@@ -180,6 +181,7 @@ class Orchestrator:
             for chunk in agent.stream(
                 {"messages": [{"role": "user", "content": message}]},
                 config=config,
+                context=git_context,
                 stream_mode=["updates", "messages"],
             ):
                 if isinstance(chunk, dict):
