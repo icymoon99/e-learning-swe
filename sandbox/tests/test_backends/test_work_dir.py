@@ -201,5 +201,6 @@ class TestPathTraversalProtection(unittest.TestCase):
 
     def test_ls_validates_path(self):
         """ls 应调用 _validate_path"""
-        result = self.backend.ls(self.full_work_dir)
+        # 使用虚拟路径（/ 表示 work_dir 根）
+        result = self.backend.ls("/")
         self.assertIn("entries", result)
