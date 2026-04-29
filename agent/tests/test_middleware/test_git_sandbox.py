@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -211,7 +210,7 @@ class TestGitSandboxMiddlewareAfterAgent:
             task_branch="feature/auth",
             git_repo_url="https://github.com/owner/repo.git",
             git_platform="github",
-            git_token_secret="TEST_TOKEN",
+            git_token="fake-token",
         )
         runtime = _make_runtime(context=ctx)
         middleware._git_context = ctx
@@ -226,25 +225,24 @@ class TestGitSandboxMiddlewareAfterAgent:
             ]
         }
 
-        with patch.dict(os.environ, {"TEST_TOKEN": "fake-token"}):
-            with patch(
-                "agent.middleware.git_sandbox._get_platform"
-            ) as mock_get_platform:
-                mock_platform = MagicMock()
-                mock_platform.create_pr.return_value = {
-                    "url": "https://github.com/owner/repo/pull/1",
-                    "number": 1,
-                }
-                mock_get_platform.return_value = mock_platform
+        with patch(
+            "agent.middleware.git_sandbox._get_platform"
+        ) as mock_get_platform:
+            mock_platform = MagicMock()
+            mock_platform.create_pr.return_value = {
+                "url": "https://github.com/owner/repo/pull/1",
+                "number": 1,
+            }
+            mock_get_platform.return_value = mock_platform
 
-                result = middleware.after_agent(state, runtime)
+            result = middleware.after_agent(state, runtime)
 
-                assert result is not None
-                assert result["git_pr_url"] == "https://github.com/owner/repo/pull/1"
-                assert result["git_pr_number"] == 1
+            assert result is not None
+            assert result["git_pr_url"] == "https://github.com/owner/repo/pull/1"
+            assert result["git_pr_number"] == 1
 
     def test_pr_creation_uses_git_token_directly(self):
-        """有 git_token 时，应直接使用 token 值而非环境变量"""
+        """有 git_token 时，应直接使用 token 值调用 _get_platform"""
         backend = _make_mock_backend()
         middleware = GitSandboxMiddleware(backend=backend)
 

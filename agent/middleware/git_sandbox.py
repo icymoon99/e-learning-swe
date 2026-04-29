@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from typing import Any
 from urllib.parse import urlparse
 
@@ -139,7 +138,7 @@ class GitSandboxMiddleware(AgentMiddleware):
             )
 
             # 配置 push 时的认证 URL
-            token = ctx.git_token or os.environ.get(ctx.git_token_secret, "")
+            token = ctx.git_token
             if token:
                 auth_url = _build_auth_clone_url(
                     ctx.git_repo_url, token, ctx.git_platform
@@ -181,7 +180,7 @@ class GitSandboxMiddleware(AgentMiddleware):
                     logger.warning("GitSandboxMiddleware: PR 创建失败")
             else:
                 logger.warning(
-                    "GitSandboxMiddleware: 未找到 Git Token"
+                    "GitSandboxMiddleware: 未配置 Git Token，跳过 PR 创建"
                 )
 
         except Exception as e:

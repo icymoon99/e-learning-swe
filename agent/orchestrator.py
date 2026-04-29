@@ -125,7 +125,6 @@ class Orchestrator:
         task_branch: str = "",
         git_repo_url: str = "",
         git_platform: str = "",
-        git_token_secret: str = "",
         git_token: str = "",
         task_id: str = "",
     ) -> dict[str, Any]:
@@ -140,8 +139,7 @@ class Orchestrator:
             task_branch: 任务分支名
             git_repo_url: Git 仓库地址（任务级）
             git_platform: Git 平台类型（任务级）
-            git_token_secret: Token 环境变量 key
-            git_token: Token 实际值（优先使用）
+            git_token: Token 实际值（从 ElGitSource.token 获取）
             task_id: 任务 ID
         Returns:
             {
@@ -176,7 +174,6 @@ class Orchestrator:
                     task_branch=task_branch,
                     git_repo_url=git_repo_url,
                     git_platform=git_platform,
-                    git_token_secret=git_token_secret,
                     git_token=git_token,
                 )
 

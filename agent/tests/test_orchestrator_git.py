@@ -70,7 +70,6 @@ class TestOrchestratorGitIntegration(TestCase):
                 task_branch="feature/auth",
                 git_repo_url="https://github.com/owner/repo.git",
                 git_platform="github",
-                git_token_secret="GITHUB_TOKEN",
             )
 
         self.assertEqual(result["status"], "completed")
