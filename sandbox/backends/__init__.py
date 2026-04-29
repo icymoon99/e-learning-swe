@@ -20,24 +20,28 @@ __all__ = [
 ]
 
 
-def get_backend(instance: ElSandboxInstance):
+def get_backend(instance: ElSandboxInstance, thread_id: str = ""):
     """根据沙箱实例创建并返回对应后端
 
     Args:
         instance: ElSandboxInstance 模型实例
+        thread_id: 可选的线程 ID，传入时自动为 work_dir 追加隔离后缀
 
     Returns:
         对应类型的 SandboxBackendProtocol 实现
     """
     metadata = instance.metadata
-    work_dir = metadata.get("work_dir", "/workspace")
+    base_work_dir = metadata.get("work_dir", "workspace")
+
+    # 隔离：追加 thread_id 后缀
+    isolated_work_dir = f"{base_work_dir}-{thread_id}" if thread_id else base_work_dir
 
     if instance.type == "localdocker":
         container_name = f"sandbox-{instance.id}"
         return LocalDockerBackend(
             container_name=container_name,
             image=metadata.get("image", "sandbox:latest"),
-            work_dir=work_dir,
+            work_dir=isolated_work_dir,
         )
 
     elif instance.type == "remotedocker":
@@ -60,14 +64,14 @@ def get_backend(instance: ElSandboxInstance):
             container_name=container_name,
             ssh_config=ssh_config,
             image=metadata.get("image", "sandbox:latest"),
-            work_dir=work_dir,
+            work_dir=isolated_work_dir,
         )
 
     elif instance.type == "localsystem":
         return LocalSystemBackend(
             name=instance.name,
-            root_path=metadata.get("root_path", "/tmp/"),
-            work_dir=metadata.get("work_dir", "/workspace"),
+            root_path=metadata.get("root_path", "sandbox/"),
+            work_dir=isolated_work_dir,
         )
 
     elif instance.type == "remotesystem":
@@ -92,8 +96,8 @@ def get_backend(instance: ElSandboxInstance):
         )
         return RemoteSystemBackend(
             name=instance.name,
-            root_path=metadata.get("root_path", "/tmp/"),
-            work_dir=metadata.get("work_dir", "/workspace"),
+            root_path=metadata.get("root_path", "sandbox/"),
+            work_dir=isolated_work_dir,
             ssh_config=ssh_config,
         )
 

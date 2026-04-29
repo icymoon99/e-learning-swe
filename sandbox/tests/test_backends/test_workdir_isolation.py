@@ -1,8 +1,79 @@
-"""沙箱工作目录隔离测试 — 数据迁移 + 各后端隔离行为"""
+"""沙箱工作目录隔离测试 — 数据迁移 + 工厂函数 thread_id 隔离 + 各后端隔离行为"""
 
 from django.test import TransactionTestCase
 from sandbox.models import ElSandboxInstance
 from sandbox.migrations.migrate_workdir import migrate_absolute_to_relative
+from sandbox.backends import get_backend
+
+
+class TestGetBackendThreadIsolation:
+    """测试 get_backend(instance, thread_id) 的 work_dir 隔离行为"""
+
+    def test_no_thread_id_returns_original_work_dir(self):
+        """不传 thread_id 时 work_dir 不变"""
+        instance = ElSandboxInstance(
+            name="test", type="localsystem", status="active",
+            metadata={"root_path": "sandbox/", "work_dir": "workspace"},
+        )
+        backend = get_backend(instance)
+        assert backend._work_dir == "workspace"
+
+    def test_with_thread_id_appends_suffix(self):
+        """传入 thread_id 时 work_dir 追加 -{thread_id} 后缀"""
+        instance = ElSandboxInstance(
+            name="test", type="localsystem", status="active",
+            metadata={"root_path": "sandbox/", "work_dir": "workspace"},
+        )
+        backend = get_backend(instance, thread_id="abc123")
+        assert backend._work_dir == "workspace-abc123"
+
+    def test_empty_string_thread_id_no_isolation(self):
+        """空字符串 thread_id 不隔离"""
+        instance = ElSandboxInstance(
+            name="test", type="localsystem", status="active",
+            metadata={"root_path": "sandbox/", "work_dir": "workspace"},
+        )
+        backend = get_backend(instance, thread_id="")
+        assert backend._work_dir == "workspace"
+
+    def test_docker_backend_isolation(self):
+        """Docker 后端同样应用隔离后缀"""
+        instance = ElSandboxInstance(
+            name="test", type="localdocker", status="active",
+            metadata={"image": "sandbox:latest", "work_dir": "workspace"},
+        )
+        backend = get_backend(instance, thread_id="xyz789")
+        assert backend._work_dir == "workspace-xyz789"
+
+    def test_remotedocker_isolation(self):
+        """远程 Docker 后端同样应用隔离后缀"""
+        instance = ElSandboxInstance(
+            name="test", type="remotedocker", status="active",
+            metadata={
+                "image": "sandbox:latest",
+                "work_dir": "workspace",
+                "ssh_host": "test.example.com",
+                "ssh_user": "test",
+                "ssh_password": "test",
+            },
+        )
+        backend = get_backend(instance, thread_id="thread-001")
+        assert backend._work_dir == "workspace-thread-001"
+
+    def test_remotesystem_isolation(self):
+        """远程 System 后端同样应用隔离后缀"""
+        instance = ElSandboxInstance(
+            name="test", type="remotesystem", status="active",
+            metadata={
+                "root_path": "sandbox/",
+                "work_dir": "workspace",
+                "ssh_host": "test.example.com",
+                "ssh_user": "test",
+                "ssh_password": "test",
+            },
+        )
+        backend = get_backend(instance, thread_id="thread-002")
+        assert backend._work_dir == "workspace-thread-002"
 
 
 class TestWorkDirDataMigration(TransactionTestCase):
