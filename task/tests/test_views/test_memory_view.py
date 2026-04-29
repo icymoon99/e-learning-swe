@@ -7,6 +7,7 @@ from rest_framework.test import APITestCase
 
 from agent.models import ElAgent
 from task.models import ElTask, ElTaskMemory
+from sandbox.models import ElSandboxInstance
 
 User = get_user_model()
 
@@ -19,7 +20,11 @@ class MemoryViewSetTest(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         self.task = ElTask.objects.create(title="测试任务", description="描述")
-        self.agent = ElAgent.objects.create(code="test-agent", name="测试Agent")
+        self.sandbox = ElSandboxInstance.objects.create(
+            name="test-sandbox", type="localsystem", status="active",
+            metadata={"root_path": "sandbox/", "work_dir": "workspace"},
+        )
+        self.agent = ElAgent.objects.create(code="test-agent", name="测试Agent", sandbox_instance=self.sandbox)
         self.url = reverse("task-memory-list", kwargs={"task_pk": str(self.task.id)})
 
     def test_list_memories_success(self):

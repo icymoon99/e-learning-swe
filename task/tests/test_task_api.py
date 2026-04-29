@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from git_source.models import ElGitSource
 from task.models import ElTask, ElTaskConversation
+from sandbox.models import ElSandboxInstance
 
 User = get_user_model()
 
@@ -152,7 +153,11 @@ class TaskApiTest(TestCase):
     def test_list_includes_execution_status(self):
         """列表包含最新执行状态"""
         from agent.models import ElAgent, ElAgentExecutionLog
-        agent = ElAgent.objects.create(code="arch", name="架构师")
+        sandbox = ElSandboxInstance.objects.create(
+            name="test-sandbox", type="localsystem", status="active",
+            metadata={"root_path": "sandbox/", "work_dir": "workspace"},
+        )
+        agent = ElAgent.objects.create(code="arch", name="架构师", sandbox_instance=sandbox)
         task = ElTask.objects.create(title="有执行", description="")
         log = ElAgentExecutionLog.objects.create(
             agent=agent, thread_id="t-1", status="completed"

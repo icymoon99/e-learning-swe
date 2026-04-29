@@ -2,14 +2,20 @@ from unittest.mock import patch
 from django.test import TestCase
 from agent.models import ElAgent, ElAgentExecutionLog
 from task.models import ElTask, ElTaskConversation
+from sandbox.models import ElSandboxInstance
 
 
 class AsyncExecutionTest(TestCase):
     def setUp(self):
+        self.sandbox = ElSandboxInstance.objects.create(
+            name="test-sandbox", type="localsystem", status="active",
+            metadata={"root_path": "sandbox/", "work_dir": "workspace"},
+        )
         self.agent = ElAgent.objects.create(
             code="coder", name="编码师",
             system_prompt="你是一个编码助手",
             status="active",
+            sandbox_instance=self.sandbox,
         )
         self.task = ElTask.objects.create(
             title="异步任务", description="描述"

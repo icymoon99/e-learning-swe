@@ -2,6 +2,7 @@ from django.test import TestCase
 from git_source.models import ElGitSource
 from agent.models import ElAgent, ElAgentExecutionLog
 from task.models import ElTask, ElTaskConversation
+from sandbox.models import ElSandboxInstance
 
 
 class ElTaskModelTest(TestCase):
@@ -47,7 +48,11 @@ class ElTaskModelTest(TestCase):
 class ElTaskConversationModelTest(TestCase):
     def setUp(self):
         self.task = ElTask.objects.create(title="任务", description="描述")
-        self.agent = ElAgent.objects.create(code="arch", name="架构师")
+        self.sandbox = ElSandboxInstance.objects.create(
+            name="test-sandbox", type="localsystem", status="active",
+            metadata={"root_path": "sandbox/", "work_dir": "workspace"},
+        )
+        self.agent = ElAgent.objects.create(code="arch", name="架构师", sandbox_instance=self.sandbox)
 
     def test_create_user_conversation(self):
         """创建用户指令对话"""
@@ -130,7 +135,11 @@ class ElTaskMemoryModelTest(TestCase):
             git_source=self.source,
             source_branch="main",
         )
-        self.agent = ElAgent.objects.create(code="analyzer", name="代码分析器")
+        self.sandbox = ElSandboxInstance.objects.create(
+            name="test-sandbox", type="localsystem", status="active",
+            metadata={"root_path": "sandbox/", "work_dir": "workspace"},
+        )
+        self.agent = ElAgent.objects.create(code="analyzer", name="代码分析器", sandbox_instance=self.sandbox)
 
     def test_create_task_memory_success(self):
         """成功创建任务记忆"""
