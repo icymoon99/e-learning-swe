@@ -11,11 +11,12 @@ from agent.models import ElAgent
 logger = logging.getLogger(__name__)
 
 
-def resolve_backend(agent_config: ElAgent):
+def resolve_backend(agent_config: ElAgent, *, thread_id: str = ""):
     """从 Agent FK 字段解析沙箱后端。
 
     Args:
         agent_config: Agent 配置模型实例
+        thread_id: 线程标识，用于沙箱工作目录隔离
 
     Returns:
         SandboxBackendProtocol 实现
@@ -42,7 +43,7 @@ def resolve_backend(agent_config: ElAgent):
             msg=f"Agent '{agent_config.name}' 绑定的沙箱 '{instance.name}' 状态异常，请检查"
         )
 
-    backend = get_backend(instance)
+    backend = get_backend(instance, thread_id=thread_id)
 
     if hasattr(backend, "ensure_container"):
         try:
