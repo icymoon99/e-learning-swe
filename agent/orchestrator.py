@@ -78,7 +78,7 @@ class Orchestrator:
         # 构建 middleware 列表
         middleware_list = [GitSandboxMiddleware(backend=backend)]
         if task_id:
-            middleware_list.insert(0, TaskMemoryMiddleware(task_id=task_id))
+            middleware_list.insert(0, TaskMemoryMiddleware(task_id=task_id, agent_code=agent_config.code))
 
         # 构建 tools 列表
         tools = []

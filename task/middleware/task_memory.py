@@ -30,9 +30,28 @@ class TaskMemoryMiddleware(AgentMiddleware):
 
     MEMORY_TOKEN_LIMIT = 8000  # 记忆注入的 token 上限
 
-    def __init__(self, task_id: str):
+    def __init__(self, task_id: str, agent_code: str = ""):
+        from agent.models import ElAgent
+
         self.task_id = task_id
         self.summarizer = MemorySummarizer()
+
+        # 根据 agent_code 获取 LLM 模型
+        if agent_code:
+            try:
+                agent = ElAgent.objects.get(code=agent_code)
+                if agent.llm_model:
+                    self.summarizer = MemorySummarizer(
+                        token_limit=self.MEMORY_TOKEN_LIMIT,
+                        llm_model=agent.llm_model,
+                    )
+            except ElAgent.DoesNotExist:
+                logger.warning(
+                    "TaskMemoryMiddleware: Agent(code=%s) 不存在，使用默认摘要服务",
+                    agent_code,
+                )
+
+        self.summarizer.token_limit = self.MEMORY_TOKEN_LIMIT
 
     def before_agent(self, state: dict, runtime: Runtime) -> dict[str, Any] | None:
         """读取历史记忆，注入到系统提示词。"""

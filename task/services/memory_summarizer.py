@@ -1,9 +1,7 @@
 """任务记忆摘要服务"""
 import logging
-from typing import Optional
 
 import httpx
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +32,10 @@ class MemorySummarizer:
     def __init__(
         self,
         token_limit: int = SUMMARY_TOKEN_LIMIT,
-        api_url: Optional[str] = None,
-        api_key: Optional[str] = None,
-        model: str = "qwen-turbo",
+        llm_model=None,
     ):
         self.token_limit = token_limit
-        self.api_url = api_url or getattr(settings, "LLM_SUMMARY_API_URL", "")
-        self.api_key = api_key or getattr(settings, "LLM_SUMMARY_API_KEY", "")
-        self.model = model
+        self.llm_model = llm_model  # ElLLMModel 实例
 
     def needs_summary(self, text: str) -> bool:
         """判断是否需要摘要"""
@@ -56,10 +50,9 @@ class MemorySummarizer:
         if not self.needs_summary(text):
             return text
 
-        if not self.api_url or not self.api_key:
+        if not self.llm_model:
             logger.warning(
-                "LLM_SUMMARY_API_URL 或 LLM_SUMMARY_API_KEY 未配置，"
-                "返回截断摘要而非 LLM 摘要"
+                "MemorySummarizer: LLM 模型未配置，返回截断摘要"
             )
             return self._truncate_summary(text)
 
@@ -73,15 +66,27 @@ class MemorySummarizer:
 
     def _llm_summarize(self, text: str) -> str:
         """调用 LLM 进行智能摘要"""
+        provider = self.llm_model.provider
+        api_url = provider.resolved_base_url
+        api_key = provider.decrypted_api_key
+        model_code = self.llm_model.model_code
+
+        if not api_url or not api_key:
+            logger.warning(
+                "LLM 供应商 %s 的 base_url 或 api_key 未配置，返回截断摘要",
+                provider.code,
+            )
+            return self._truncate_summary(text)
+
         try:
             response = httpx.post(
-                self.api_url,
+                api_url,
                 headers={
-                    "Authorization": f"Bearer {self.api_key}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": self.model,
+                    "model": model_code,
                     "messages": [
                         {
                             "role": "system",
