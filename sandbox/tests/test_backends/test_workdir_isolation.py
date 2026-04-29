@@ -138,6 +138,38 @@ class TestLocalSystemBackendRootPath:
             shutil.rmtree(tmp, ignore_errors=True)
 
 
+class TestRemoteSystemBackendRootPath:
+    """测试 RemoteSystemBackend 的 root_path + work_dir 路径拼接"""
+
+    def test_build_cmd_joins_root_path_and_work_dir(self):
+        """_build_cmd 应使用 {root_path}/{work_dir} 拼接路径"""
+        from sandbox.backends.remote_system import RemoteSystemBackend
+        from sandbox.executors import SSHConfig
+
+        ssh_config = SSHConfig(host="test.example.com", user="test", password="test")
+        backend = RemoteSystemBackend(
+            name="test", root_path="sandbox/", ssh_config=ssh_config, work_dir="workspace-xyz"
+        )
+        cmd = backend._build_cmd("echo hello")
+        assert "cd" in cmd
+        assert "sandbox/workspace-xyz" in cmd
+
+    def test_ensure_dir_creates_joined_path(self):
+        """ensure_dir 应创建 {root_path}/{work_dir} 目录"""
+        from unittest.mock import patch
+        from sandbox.backends.remote_system import RemoteSystemBackend
+        from sandbox.executors import SSHConfig
+
+        ssh_config = SSHConfig(host="test.example.com", user="test", password="test")
+        backend = RemoteSystemBackend(
+            name="test", root_path="remote_root/", ssh_config=ssh_config, work_dir="work"
+        )
+        with patch("sandbox.backends.remote_system.execute_remote") as mock_exec:
+            backend.ensure_dir()
+            call_args = mock_exec.call_args[0][0]
+            assert "remote_root/work" in call_args
+
+
 class TestWorkDirDataMigration(TransactionTestCase):
     """测试 0003_migrate_workdir_to_relative 迁移
 

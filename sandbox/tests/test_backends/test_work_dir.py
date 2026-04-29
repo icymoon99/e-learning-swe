@@ -59,7 +59,7 @@ class TestRemoteSystemBackendWorkDir(unittest.TestCase):
         """_build_cmd_with_env(_build_cmd(cmd)) 应包含 cd"""
         ssh_config = SSHConfig(host="test.example.com", user="test", password="test")
         backend = RemoteSystemBackend(
-            name="test", root_path="/tmp", ssh_config=ssh_config, work_dir="/workspace"
+            name="test", root_path="sandbox/", ssh_config=ssh_config, work_dir="workspace"
         )
 
         with patch("sandbox.backends.remote_system.execute_remote") as mock_exec:
@@ -67,14 +67,14 @@ class TestRemoteSystemBackendWorkDir(unittest.TestCase):
             backend.execute("echo hello")
 
             call_args = mock_exec.call_args[0][0]
-            self.assertIn("cd /workspace", call_args)
+            self.assertIn("cd sandbox/workspace", call_args)
             self.assertIn("echo hello", call_args)
 
     def test_execute_with_env_cd_after_export(self):
         """带环境变量时，cd 应在 export 之后"""
         ssh_config = SSHConfig(host="test.example.com", user="test", password="test")
         backend = RemoteSystemBackend(
-            name="test", root_path="/tmp", ssh_config=ssh_config, work_dir="/workspace"
+            name="test", root_path="sandbox/", ssh_config=ssh_config, work_dir="workspace"
         )
 
         with patch("sandbox.backends.remote_system.execute_remote") as mock_exec:
@@ -83,8 +83,8 @@ class TestRemoteSystemBackendWorkDir(unittest.TestCase):
 
             call_args = mock_exec.call_args[0][0]
             self.assertIn("export", call_args)
-            self.assertIn("cd /workspace", call_args)
-            cd_pos = call_args.index("cd /workspace")
+            self.assertIn("cd sandbox/workspace", call_args)
+            cd_pos = call_args.index("cd sandbox/workspace")
             export_pos = call_args.index("export")
             self.assertGreater(cd_pos, export_pos)
 
