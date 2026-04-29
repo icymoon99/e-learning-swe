@@ -84,19 +84,28 @@ class GitSandboxMiddleware(AgentMiddleware):
         )
 
         try:
-            # 确保沙箱工作目录存在
+            logger.info(
+                "GitSandboxMiddleware: 开始 Git 初始化, repo=%s, branch=%s, work_branch=%s",
+                ctx.git_repo_url, ctx.task_branch, work_branch,
+            )
+
             if hasattr(self.backend, "ensure_dir"):
                 self.backend.ensure_dir()
+                logger.info("GitSandboxMiddleware: 沙箱目录已创建")
             elif hasattr(self.backend, "ensure_container"):
                 self.backend.ensure_container()
+                logger.info("GitSandboxMiddleware: 沙箱容器已就绪")
 
-            # 构建认证 URL（嵌入 token）用于克隆
             clone_url = _build_auth_clone_url(
                 ctx.git_repo_url, ctx.git_token, ctx.git_platform
             )
 
             self._execute_in_sandbox("rm -rf *")
+            logger.info("GitSandboxMiddleware: 工作目录已清空")
+
             self._execute_in_sandbox(f"git clone {clone_url} .")
+            logger.info("GitSandboxMiddleware: 代码克隆完成")
+
             self._execute_in_sandbox(
                 'git config user.name "Agent" && '
                 'git config user.email "agent@e-learning.local"'
@@ -106,9 +115,10 @@ class GitSandboxMiddleware(AgentMiddleware):
             )
             self._execute_in_sandbox(f"git checkout -b {work_branch}")
             logger.info("GitSandboxMiddleware: 工作分支 %s 已创建", work_branch)
+
         except Exception as e:
-            logger.error(
-                "GitSandboxMiddleware: Git 初始化失败，继续执行 Agent: %s", e
+            logger.warning(
+                "GitSandboxMiddleware: Git 初始化失败，继续执行 Agent (不影响文件操作): %s", e
             )
             self._git_context = None  # 标记跳过后续 Git 操作
 
@@ -127,17 +137,16 @@ class GitSandboxMiddleware(AgentMiddleware):
             f"{ctx.task_branch}_{ctx.thread_id[:8]}_{self._agent_code}"
         )
 
-        # 从 state 中解析 Agent 的 JSON 输出
         commit_msg, pr_title, pr_desc = self._parse_agent_output(state)
+        logger.info("GitSandboxMiddleware: Agent 输出已解析, commit_msg=%s, pr_title=%s", commit_msg, pr_title)
 
         try:
-            # git add + commit
             self._execute_in_sandbox("git add -A")
             self._execute_in_sandbox(
                 f'git commit -m "{commit_msg}"'
             )
+            logger.info("GitSandboxMiddleware: 代码已提交")
 
-            # 配置 push 时的认证 URL
             token = ctx.git_token
             if token:
                 auth_url = _build_auth_clone_url(
@@ -147,13 +156,11 @@ class GitSandboxMiddleware(AgentMiddleware):
                     f"git remote set-url origin {auth_url}"
                 )
 
-            # push
-            self._execute_in_sandbox(
-                f"git push origin {work_branch}"
-            )
+                self._execute_in_sandbox(
+                    f"git push origin {work_branch}"
+                )
+                logger.info("GitSandboxMiddleware: 分支已推送")
 
-            # 创建 PR（宿主机 REST API）
-            if token:
                 platform = _get_platform(
                     ctx.git_platform, token, ctx.git_repo_url
                 )
@@ -179,7 +186,7 @@ class GitSandboxMiddleware(AgentMiddleware):
                 else:
                     logger.warning("GitSandboxMiddleware: PR 创建失败")
             else:
-                logger.warning(
+                logger.info(
                     "GitSandboxMiddleware: 未配置 Git Token，跳过 PR 创建"
                 )
 
@@ -194,6 +201,7 @@ class GitSandboxMiddleware(AgentMiddleware):
 
     def _execute_in_sandbox(self, command: str) -> str:
         """在沙箱内执行命令并返回输出。"""
+        logger.debug("GitSandboxMiddleware: 执行命令: %s", command)
         result = self.backend.execute(command)
         if result.exit_code != 0:
             raise RuntimeError(
